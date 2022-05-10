@@ -241,7 +241,7 @@ Publish template codes for pipeline
 	</details>
 
 <ul>
-<li><details><summary>MarkDuplicates 2</summary>
+<details><summary>MarkDuplicates 2</summary>
 	
 	```Shell
 	# Sort reads by coordinate
@@ -259,7 +259,6 @@ Publish template codes for pipeline
 	```
 	
 </details>
-</li>
 </ul>
 
 ###
