@@ -240,7 +240,24 @@ Publish template codes for pipeline
 	
 	</details>
 
+* Get TReC and ASReC
+	
+	Download asSeq source package
+	
+	```Shell
+	url=https://github.com/Sun-lab/asSeq/raw
+	url=$url/master/asSeq_0.99.501.tar.gz
+	
+	wget $url
+	```
+	
+	Install R package
+	
+	```R
+	install.packages(pkgs = "asSeq_0.99.501.tar.gz",
+		type = "source",repos = NULL)
+	```
 
-
+	
 ###
 
