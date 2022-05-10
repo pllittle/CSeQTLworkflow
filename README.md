@@ -258,7 +258,7 @@ Publish template codes for pipeline
 		M=out.marked_dup_metrics.txt ASSUME_SORT_ORDER=coordinate
 	```
 	
-</details>
+	</details>
 </ul>
 
 ###
