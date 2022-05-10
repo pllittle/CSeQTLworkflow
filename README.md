@@ -1,5 +1,12 @@
 # CSeQTLworkflow
 
+This repository contains template codes for 
+runnings workflow steps.
+
+## Links
+
+* [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
+
 ## To Dos
 
 Publish template codes for pipeline
@@ -138,7 +145,7 @@ Publish template codes for pipeline
 	```
 
 * Build STAR index
-
+	
 	```Shell
 	fasta_fn=Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.fasta
 	gtf_fn=gencode.v26.GRCh38.ERCC.genes.gtf
