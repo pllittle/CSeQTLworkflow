@@ -124,7 +124,7 @@ Publish template codes for pipeline
 ## BAM workflow
 
 	<details>
-	<summary>BamToFastq</summary>
+	<summary>BamToFastq!</summary>
 	
 	For paired-end reads
 	
