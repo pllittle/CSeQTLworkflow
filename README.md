@@ -14,9 +14,7 @@ Publish template codes for pipeline
 
 ## Template Codes
 
-## Obtaining Datasets
-
-### CommonMind Consortium
+## CommonMind Consortium
 
 * Code to obtain CMC inputs
 	<details>
@@ -85,7 +83,7 @@ Publish template codes for pipeline
 
 	</details>
 
-### Blueprint
+## Blueprint
 
 * Download metadata and BAMs with [Pyega3](https://github.com/EGA-archive/ega-download-client)
 * `cred_file.json` contains user login information
@@ -114,7 +112,7 @@ Publish template codes for pipeline
 
 	# Download code
 	pyega3 -cf cred_file.json -c $nt fetch $id
-```
+	```
 
 ## BAM workflow
 
