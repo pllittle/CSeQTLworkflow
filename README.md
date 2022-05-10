@@ -124,6 +124,8 @@ Publish template codes for pipeline
 ## BAM workflow
 
 * BamToFastq
+	<details>
+	<summary>Click to expand!</summary>
 	
 	For paired-end reads
 	
@@ -143,7 +145,9 @@ Publish template codes for pipeline
 		INCLUDE_NON_PF_READS=true \
 		VALIDATION_STRINGENCY=SILENT
 	```
-
+	
+	</details>
+	
 * Build STAR index
 	
 	```Shell
