@@ -123,7 +123,8 @@ Publish template codes for pipeline
 
 ## BAM workflow
 
-	<details><summary>BamToFastq</summary>
+	<details>
+	<summary>BamToFastq</summary>
 	
 	For paired-end reads
 	
@@ -146,7 +147,8 @@ Publish template codes for pipeline
 	
 	</details>
 
-	<details><summary>Build STAR index</summary>
+	<details>
+	<summary>Build STAR index</summary>
 
 	```Shell
 	fasta_fn=Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.fasta
