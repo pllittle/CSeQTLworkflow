@@ -26,29 +26,27 @@ Publish template codes for pipeline
 * `cred_file.json` contains user login information
 * To obtain metadata,
 
-```Shell
+	```Shell
 
-dataset=EGAD00001002663 # for example
-# dataset=EGAD00001002671
-# dataset=EGAD00001002674
-# dataset=EGAD00001002675
+	dataset=EGAD00001002663 # for example
+	# dataset=EGAD00001002671
+	# dataset=EGAD00001002674
+	# dataset=EGAD00001002675
 
-# Download metadata code
-pyega3 -cf cred_file.json files $dataset \
-	| grep "EGAF" | grep -v "cram" | tr -s ' ' | sed 's/^ //g' \
-	| sed 's/ /\t/g' > file_metadata
-```
+	# Download metadata code
+	pyega3 -cf cred_file.json files $dataset
+	```
 
 * To obtain bams one by one,
 
-```Shell
-# num threads/cores
-nt=1
+	```Shell
+	# num threads/cores
+	nt=1
 
-# Example file id per BAM
-id=EGAF00001330176
+	# Example file id per BAM
+	id=EGAF00001330176
 
-# Download code
-pyega3 -cf cred_file.json -c $nt fetch $id
+	# Download code
+	pyega3 -cf cred_file.json -c $nt fetch $id
 ```
 
