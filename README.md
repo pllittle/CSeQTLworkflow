@@ -123,7 +123,8 @@ Publish template codes for pipeline
 
 ## BAM workflow
 
-* BamToFastq <details><summary>Click to expand!</summary>
+* BamToFastq 
+	<details><summary>Click to expand!</summary>
 	
 	For paired-end reads
 	
