@@ -18,7 +18,9 @@ Publish template codes for pipeline
 
 ### CommonMind Consortium
 
-* <details><summary>Code to obtain CMC inputs</summary>
+* Code to obtain CMC inputs
+	<details>
+	<summary>Click to expand!</summary>
 
 	```R
 	# Install package
@@ -113,4 +115,44 @@ Publish template codes for pipeline
 	# Download code
 	pyega3 -cf cred_file.json -c $nt fetch $id
 ```
+
+## BAM workflow
+
+* BamToFastq
+	
+	For paired-end reads
+	
+	```Shell
+	java -Xmx4g -jar picard.jar SamToFastq \
+		INPUT=input.bam FASTQ=output_1.fastq.gz \
+		SECOND_END_FASTQ=output_2.fastq.gz \
+		UNPAIRED_FASTQ=output_unpair.fastq.gz \
+		INCLUDE_NON_PF_READS=true VALIDATION_STRINGENCY=SILENT
+	```
+	
+	For single-end reads
+
+	```Shell
+	java -Xmx4g -jar picard.jar SamToFastq \
+		INPUT=input.bam FASTQ=output.fastq \
+		INCLUDE_NON_PF_READS=true \
+		VALIDATION_STRINGENCY=SILENT
+	```
+
+* Build STAR index
+
+	```Shell
+	fasta_fn=Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.fasta
+	gtf_fn=gencode.v26.GRCh38.ERCC.genes.gtf
+	
+	STAR --runMode genomeGenerate \
+		--genomeDir ./star_index \
+		--genomeFastaFiles $fasta_fn \
+		--sjdbGTFfile $gtf_fn \
+		--sjdbOverhang 99 --runThreadN 1
+	```
+
+
+
+###
 
