@@ -123,8 +123,7 @@ Publish template codes for pipeline
 
 ## BAM workflow
 
-* BamToFastq 
-	<details><summary>Click to expand!</summary>
+<details><summary>BamToFastq</summary>
 	
 	For paired-end reads
 	
@@ -145,10 +144,10 @@ Publish template codes for pipeline
 		VALIDATION_STRINGENCY=SILENT
 	```
 	
-	</details>
-	
-* Build STAR index
-	
+</details>
+
+<details><summary>Build STAR index</summary>
+
 	```Shell
 	fasta_fn=Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.fasta
 	gtf_fn=gencode.v26.GRCh38.ERCC.genes.gtf
@@ -159,6 +158,8 @@ Publish template codes for pipeline
 		--sjdbGTFfile $gtf_fn \
 		--sjdbOverhang 99 --runThreadN 1
 	```
+
+</details>
 
 * Run STAR for read alignment
 	
