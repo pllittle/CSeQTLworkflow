@@ -149,8 +149,10 @@ Publish template codes for pipeline
 	
 	</details>
 
+* Build STAR index
+	
 	<details>
-	<summary>Build STAR index</summary>
+	<summary>Click to expand!</summary>
 
 	```Shell
 	fasta_fn=Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.fasta
@@ -166,6 +168,9 @@ Publish template codes for pipeline
 	</details>
 
 * Run STAR for read alignment
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	For paired-end reads
 	
@@ -210,6 +215,8 @@ Publish template codes for pipeline
 		--outSAMattributes NH HI AS nM NM ch \
 		--outSAMattrRGline ID:rg1 SM:sm1
 	```
+	
+	</details>
 
 * MarkDuplicates
 
