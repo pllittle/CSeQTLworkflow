@@ -19,8 +19,8 @@ Publish template codes for pipeline
 ### CommonMind Consortium
 
 * Code to obtain CMC inputs
-<details>
-<summary>Click to expand!</summary>
+	<details>
+	<summary>Click to expand!</summary>
 
 	```R
 	# Install package
@@ -83,7 +83,7 @@ Publish template codes for pipeline
 
 	```
 
-</details>
+	</details>
 
 ### Blueprint
 
