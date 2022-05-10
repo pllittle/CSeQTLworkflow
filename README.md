@@ -219,15 +219,26 @@ Publish template codes for pipeline
 	</details>
 
 * MarkDuplicates
-
+	
+	<details>
+	<summary>Click to expand!</summary>
+	
 	```Shell
 	# Sort reads by coordinate
 	samtools sort -@ 0 -o output_hg38.sortedByCoordinate.bam \
 		output_hg38Aligned.out.bam
 	
+	# Make bam index
+	samtools index -b -@ 1 output_hg38.sortedByCoordinate.bam
 	
+	# MarkDuplicates
+	java -Xmx4g -jar picard.jar MarkDuplicates \
+		INPUT=output_hg38.sortedByCoordinate.bam \
+		OUTPUT=output_hg38.sortedByCoordinate.md.bam \
+		M=out.marked_dup_metrics.txt ASSUME_SORT_ORDER=coordinate
 	```
-
+	
+	</details>
 
 
 
