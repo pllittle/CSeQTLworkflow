@@ -263,16 +263,15 @@ Publish template codes for pipeline
 	wget $url
 	```
 	
-	* Install R package
+	* Install R package and run `asSeq` to get unique reads and filter
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	install.packages(pkgs = "asSeq_0.99.501.tar.gz",
 		type = "source",repos = NULL)
-	```
 	
-	* Run `asSeq` to get unique reads and filter
-	
-	```R
 	PE = TRUE 
 		# set TRUE for paired-end samples
 		# set FALSE for single-end
@@ -292,7 +291,12 @@ Publish template codes for pipeline
 		param = param1)
 	```
 	
+	</details>
+	
 	* Create exon image file
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	gtf_fn = "gencode.v26.GRCh38.ERCC.genes.gtf.gz"
@@ -305,7 +309,12 @@ Publish template codes for pipeline
 	saveRDS(exons_list_per_gene,gtf_rds_fn)
 	```
 	
+	</details>
+	
 	* Get total read count (TReC)
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	genes = readRDS(gtf_rds_fn)
@@ -316,6 +325,8 @@ Publish template codes for pipeline
 		ignore.strand = TRUE,fragments = PE)
 	ct = as.data.frame(SummarizedExperiment::assay(se))
 	```
+	
+	</details>
 	
 	* Filter reads by Qname
 	
