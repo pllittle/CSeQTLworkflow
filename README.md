@@ -1,10 +1,5 @@
 # CSeQTLworkflow
 
-## To Dos
-
-* Torus enrichment
-* GWAS enrichment
-
 ## Introduction and Outline
 
 This repository contains template codes for 
