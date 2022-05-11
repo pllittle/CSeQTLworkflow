@@ -4,10 +4,9 @@
 
 Publish template codes for pipeline
 
-* Where datasets obtained and how
-* GTEx pipeline
-* asSeq: TReC, ASReC
-* Deconvolution
+* How GTEx brain and blood datasets processed
+	Cite gtexAnvil repo
+
 * eQTL mapping code
 * Torus enrichment
 * GWAS enrichment
@@ -24,7 +23,7 @@ runnings workflow steps including
 	CIBERSORT and ICeDT
 * eQTL mapping
 
-## Links
+## Reference Data
 
 * [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
 * [Reference fasta](https://personal.broadinstitute.org/francois/topmed/Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.tar.gz)
