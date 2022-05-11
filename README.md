@@ -593,7 +593,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 
 ## Enrichment
 
-	Functional Enrichment with [Torus](https://github.com/xqwen/torus)
+* Functional Enrichment with [Torus](https://github.com/xqwen/torus) 
 	with example code provided below based on this 
 	[markdown](https://github.com/xqwen/torus/blob/master/examples/GEUVADIS/README.md).
 	
@@ -605,7 +605,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 		-est > output_enrich
 	```
 	
-	GWAS Enrichment with Jackknife-based inference
+* GWAS Enrichment with Jackknife-based inference
 
 ###
 
