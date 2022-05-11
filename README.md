@@ -32,7 +32,7 @@ for our [manuscript](https://www.biorxiv.org/content/10.1101/2022.03.31.486605v1
 
 Since GTEx samples are available on the NHGRI AnVIL cloud, they
 were processed using a combination of Docker and WDL with details
-provided [here](https://github.com/Sun-lab/gtex_AnVIL).
+provided in [this repository](https://github.com/Sun-lab/gtex_AnVIL).
 
 ## CommonMind Consortium
 
@@ -590,6 +590,22 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	</details>
 
 </details>
+
+## Enrichment
+
+	Functional Enrichment with [Torus](https://github.com/xqwen/torus)
+	with example code provided below based on this 
+	[markdown](https://github.com/xqwen/torus/blob/master/examples/GEUVADIS/README.md).
+	
+	```Shell
+	torus -d eqtls.gz \
+		-smap snpMap.gz \
+		-gmap geneMap.gz \
+		-annot annot.gz \
+		-est > output_enrich
+	```
+	
+	GWAS Enrichment with Jackknife-based inference
 
 ###
 
