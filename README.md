@@ -593,6 +593,9 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 
 ## Enrichment
 
+<details>
+<summary>Click to expand!</summary>
+
 * Functional Enrichment with [Torus](https://github.com/xqwen/torus) 
 	with example code provided below based on this 
 	[markdown with examples and documentation](https://github.com/xqwen/torus/blob/master/examples/GEUVADIS/README.md).
@@ -646,6 +649,8 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	}
 	
 	```
+
+</details>
 
 ###
 
