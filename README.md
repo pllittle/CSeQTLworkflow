@@ -538,8 +538,8 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	TREC 	# TReC vector
 	SNP	# phased genotype vector
 	hap2	# 2nd haplotype counts
-	ASREC # total haplotype counts = hap1 + hap2
-	PHASE # Indicator vector of whether or not to use haplotype counts
+	ASREC 	# total haplotype counts = hap1 + hap2
+	PHASE 	# Indicator vector of whether or not to use haplotype counts
 	RHO 	# cell type proportions matrix
 	trim 	# TRUE for trimmed analysis, FALSE for untrimmed
 	```
