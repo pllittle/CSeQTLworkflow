@@ -17,7 +17,7 @@ runnings workflow steps including
 * [Deconvolution](https://github.com/pllittle/CSeQTLworkflow#deconvolution) with
 	CIBERSORT and ICeDT
 * [eQTL mapping](https://github.com/pllittle/CSeQTLworkflow#eqtl-mapping)
-* Torus and GWAS enrichment
+* [Enrichment](https://github.com/pllittle/CSeQTLworkflow#enrichment)
 
 for our [manuscript](https://www.biorxiv.org/content/10.1101/2022.03.31.486605v1) 
 **Cell Type-Specific Expression Quantitative Trait Loci**.
