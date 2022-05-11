@@ -1,14 +1,5 @@
 # CSeQTLworkflow
 
-This repository contains template codes for 
-runnings workflow steps.
-
-## Links
-
-* [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
-* [Reference fasta](https://personal.broadinstitute.org/francois/topmed/Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.tar.gz)
-* [GTF](https://personal.broadinstitute.org/francois/topmed/gencode.v26.GRCh38.ERCC.genes.gtf.gz)
-
 ## To Dos
 
 Publish template codes for pipeline
@@ -21,7 +12,23 @@ Publish template codes for pipeline
 * Torus enrichment
 * GWAS enrichment
 
-## Template Codes
+## Introduction
+
+This repository contains template codes for 
+runnings workflow steps including
+
+* [CommonMind Consortium data preparation](https://github.com/pllittle/CSeQTLworkflow#commonmind-consortium)
+* [Blueprint data preparation](https://github.com/pllittle/CSeQTLworkflow#blueprint)
+* [BAM workflow to TReC/ASReC](https://github.com/pllittle/CSeQTLworkflow#bam-workflow)
+* [Deconvolution](https://github.com/pllittle/CSeQTLworkflow#deconvolution) with
+	CIBERSORT and ICeDT
+* eQTL mapping
+
+## Links
+
+* [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
+* [Reference fasta](https://personal.broadinstitute.org/francois/topmed/Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.tar.gz)
+* [GTF](https://personal.broadinstitute.org/francois/topmed/gencode.v26.GRCh38.ERCC.genes.gtf.gz)
 
 ## CommonMind Consortium
 
@@ -93,7 +100,11 @@ Publish template codes for pipeline
 
 ## Blueprint
 
-* Download metadata and BAMs with [Pyega3](https://github.com/EGA-archive/ega-download-client)
+<details>
+<summary>Click to expand!</summary>
+
+* Download metadata and BAMs with 
+	[Pyega3](https://github.com/EGA-archive/ega-download-client)
 * `cred_file.json` contains user login information
 * To obtain metadata,
 
@@ -121,6 +132,8 @@ Publish template codes for pipeline
 	# Download code
 	pyega3 -cf cred_file.json -c $nt fetch $id
 	```
+
+</details>
 
 ## BAM workflow
 
@@ -403,7 +416,7 @@ Publish template codes for pipeline
 
 </details>
 
-# Deconvolution
+## Deconvolution
 
 * Signature expression derived from single cell RNAseq
 	* [Middle Temporaral Gyrus](https://portal.brain-map.org/atlases-and-data/rnaseq/human-mtg-smart-seq)
