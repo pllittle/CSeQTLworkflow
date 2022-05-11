@@ -544,16 +544,16 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	PHASE 	# Indicator vector of whether or not to use haplotype counts
 	
 	# Tuning arguments
-	trim 	# TRUE for trimmed analysis, FALSE for untrimmed
+	trim 			# TRUE for trimmed analysis, FALSE for untrimmed
 	thres_TRIM # if trim = TRUE, the Cooks' distance cutoff to trim sample TReCs
-	ncores # number of threads/cores to parallelize the loop, improve runtime
+	ncores 		# number of threads/cores to parallelize the loop, improve runtime
 	
 	# ASREC-related cutoffs to satisfy to use allele-specific read counts
-	numAS 	# cutoff to determine if a sample has sufficient read counts
+	numAS 		# cutoff to determine if a sample has sufficient read counts
 	numASn 	# cutoff of samples having ASREC >= numAS
-	numAS_het # minimum number for sum(ASREC >= numAS & SNP %in% c(1,2))
-	cistrans # p-value cutoff on cis/trans testing to determine which p-value 
-						# (TReC-only or TReC+ASReC) to report
+	numAS_het 	# minimum number for sum(ASREC >= numAS & SNP %in% c(1,2))
+	cistrans 	# p-value cutoff on cis/trans testing to determine which p-value 
+					# (TReC-only or TReC+ASReC) to report
 	```
 	
 	eQTL mapping for one gene
