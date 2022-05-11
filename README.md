@@ -6,6 +6,8 @@ runnings workflow steps.
 ## Links
 
 * [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
+* [Reference fasta](https://personal.broadinstitute.org/francois/topmed/Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.tar.gz)
+* [GTF](https://personal.broadinstitute.org/francois/topmed/gencode.v26.GRCh38.ERCC.genes.gtf.gz)
 
 ## To Dos
 
@@ -238,6 +240,16 @@ Publish template codes for pipeline
 		M=out.marked_dup_metrics.txt ASSUME_SORT_ORDER=coordinate
 	```
 	
+	Process post-markduplicate sorted bam
+	
+	```Shell
+	# Count num reads in bam
+	samtools view -c -@ 0 output_hg38.sortedByCoordinate.md.bam
+	
+	# Re-index bam
+	samtools index -b -@ 1 output_hg38.sortedByCoordinate.md.bam
+	```
+	
 	</details>
 
 * Get TReC and ASReC
@@ -257,7 +269,99 @@ Publish template codes for pipeline
 	install.packages(pkgs = "asSeq_0.99.501.tar.gz",
 		type = "source",repos = NULL)
 	```
-
+	
+	Run `asSeq` to get unique reads and filter
+	
+	```R
+	PE = TRUE 
+		# set TRUE for paired-end samples
+		# set FALSE for single-end
+	
+	flag1 = Rsamtools::scanBamFlag(isUnmappedQuery = FALSE,
+		isSecondaryAlignment = FALSE,isDuplicate = FALSE,
+		isNotPassingQualityControls = FALSE,
+		isSupplementaryAlignment = FALSE,isProperPair = PE)
+	
+	param1 = Rsamtools::ScanBamParam(flag = flag1,
+		what = "seq",mapqFilter = 255)
+	
+	bam_file = "output_hg38.sortedByCoordinate.md.bam"
+	bam_filt_fn = "output.filtered.asSeq.bam"
+	Rsamtools::filterBam(file = bam_file,
+		destination = bam_filt_fn,
+		param = param1)
+	```
+	
+	Create exon image file
+	
+	```R
+	gtf_fn = "gencode.v26.GRCh38.ERCC.genes.gtf.gz"
+	exdb = GenomicFeatures::makeTxDbFromGFF(file = gtf_fn,
+		format = "gtf")
+	exons_list_per_gene = GenomicFeatures::exonsBy(exdb,
+		by = "gene")
+	
+	gtf_rds_fn = "exon_by_genes_gencode_v26.rds"
+	saveRDS(exons_list_per_gene,gtf_rds_fn)
+	```
+	
+	Get total read count (TReC)
+	
+	```R
+	genes = readRDS(gtf_rds_fn)
+	bamfile = Rsamtools::BamFileList(bam_filt_fn,
+		yieldSize = 1000000)
+	se = GenomicAlignments::summarizeOverlaps(features = genes,
+		reads = bamfile,mode = "Union",singleEnd = !PE,
+		ignore.strand = TRUE,fragments = PE)
+	ct = as.data.frame(SummarizedExperiment::assay(se))
+	```
+	
+	Filter reads by Qname
+	
+	```Shell
+	samtools sort -n -o output.filtered.asSeq.sortQ.bam \
+		output.filtered.asSeq.bam
+	```
+	
+	Extract allele-specific reads, outputs hap1.bam, hap2.bam, hapN.bam
+	
+	```R
+	het_snp_fn = "<tab delimited filename of heterozygous SNPs for sample>"
+		# Columns: chr, position, hap1 allele, hap2 allele
+		# no header
+	
+	bam_filt_sortQ_fn = "output.filtered.asSeq.sortQ"
+	asSeq::extractAsReads(input = sprintf("%s.bam",bam_filt_sortQ_fn),
+		snpList = het_snp_fn,min.avgQ = 20,min.snpQ = 20)
+	```
+	
+	Count allele-specific read counts (ASReC)
+	
+	```R
+	se1 = GenomicAlignments::summarizeOverlaps(features = genes,
+		reads = sprintf("%s_hap1.bam",bam_filt_sortQ_fn),mode = "Union",
+		singleEnd = !PE,ignore.strand = TRUE,fragments = PE)
+	se2 = GenomicAlignments::summarizeOverlaps(features = genes,
+		reads = sprintf("%s_hap2.bam",bam_filt_sortQ_fn),mode = "Union",
+		singleEnd = !PE,ignore.strand = TRUE,fragments = PE)
+	seN = GenomicAlignments::summarizeOverlaps(features = genes,
+		reads = sprintf("%s_hapN.bam",bam_filt_sortQ_fn),mode = "Union",
+		singleEnd = !PE,ignore.strand = TRUE,fragments = PE)
+	```
+	
+	Save read counts
+	
+	```R
+	ct1 = as.data.frame(SummarizedExperiment::assay(se1))
+	ct2 = as.data.frame(SummarizedExperiment::assay(se2))
+	ctN = as.data.frame(SummarizedExperiment::assay(seN))
+	cts = cbind(ct,ct1,ct2,ctN) # trec, hap1, hap2, hapN
+	dim(cts); cts[1:2,]
+	out_fn = "output.trecase.txt"
+	write.table(cts,file = out_fn,quote = FALSE,
+		sep = "\t", eol = "\n")
+	```
 	
 ###
 
