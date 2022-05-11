@@ -435,7 +435,7 @@ Publish template codes for pipeline
 	
 	```
 	
-	* CIBERSORT
+	CIBERSORT
 	
 	```R
 	sig_fn = file.path(work_dir,"signature.txt")
@@ -464,7 +464,7 @@ Publish template codes for pipeline
 	
 	```
 
-	* ICeDT
+	ICeDT
 	
 	```R
 	fit = ICeDT::ICeDT(Y = bulk_tpm,Z = sig_tpm,
