@@ -86,8 +86,7 @@ Publish template codes for pipeline
 	tmp_link = file.path(tmp_link,"downloads/na35/genotyping")
 	tmp_link = file.path(tmp_link,"GenomeWideSNP_6.na35.annot.csv.zip")
 	system(sprintf("wget %s",tmp_link))
-
-
+	
 	```
 
 	</details>
@@ -399,5 +398,89 @@ Publish template codes for pipeline
 	
 	</details>
 
+# Deconvolution
+
+* Signature expression derived from single cell RNAseq
+	* [Middle Temporaral Gyrus](https://portal.brain-map.org/atlases-and-data/rnaseq/human-mtg-smart-seq)
+	* [Pipeline/Workflow](https://github.com/Sun-lab/scRNAseq_pipelines/tree/master/MTG)
+		to perform quality control on samples and genes, perform 
+		dimension reduction, clustering, and compare cluster assignments 
+		to existing cell type labeling
+	* [Downstream differential expression analysis](https://github.com/Sun-lab/scRNAseq_pipelines/tree/master/_brain_cell_type)
+
+* Comments:
+	* Transcripts per million (TPM), gene count normalized 
+	by exonic gene length and then all genes are normalized by 
+	total normalized gene count, then multipled by 1 million
+	* Cell sizes: For brain, summation of gene count normalized 
+	by exonic gene length. For blood, obtained from EPIC and 
+	ICeDT papers.
+	
+* Deconvolution Inputs
+	* Bulk RNA-seq TPM (`bulk_tpm`),
+	* scRNA-seq TPM (`sig_tpm`),
+	* cell sizes
+
+* Template code
+	
+	Input variables and objects. Make sure the genes are 
+	ordered consistently between `sig_tpm` and `bulk_tpm`
+	
+	```R
+	work_dir = "." # working directory
+	setwd(work_dir)
+	
+	sig_tpm 	# TPM signature expression matrix
+	bulk_tpm 	# TPM bulk expression matrix
+	
+	```
+	
+	* CIBERSORT
+	
+	```R
+	sig_fn = file.path(work_dir,"signature.txt")
+	mix_fn = file.path(work_dir,"mixture.txt")
+	write.table(cbind(rowname=rownames(sig_tpm),sig_tpm),
+		file = sig_fn,sep = "\t",quote = FALSE,row.names = FALSE)
+	write.table(cbind(rowname=rownames(bulk_tpm),bulk_tpm),
+		file = mix_fn,sep = "\t",quote = FALSE,row.names = FALSE)
+	
+	source("CIBERSORT.R") # obtained from CIBERSORT website
+	results = CIBERSORT(sig_matrix = sig_fn,mixture_file = mix_fn,
+		perm = 0,QN = FALSE,absolute = FALSE,abs_method = 'sig.score',
+		filename = "DECON")
+	unlink(x = c(sig_fn,mix_fn))
+	ciber_fn = sprintf("CIBERSORT-Results_%s.txt","DECON")
+	unlink(ciber_fn)
+	QQ = ncol(sig_tpm)
+	
+	# Extract proportion of transcripts per cell type per sample
+	pp_bar_ciber = results[,seq(QQ)]
+	
+	# Calculate proportion of cell types per sample
+	pp_hat_ciber = t(apply(pp_bar_ciber,1,function(xx){
+		yy = xx / cell_sizes; yy / sum(yy)
+	}))
+	
+	```
+
+	* ICeDT
+	
+	```R
+	fit = ICeDT::ICeDT(Y = bulk_tpm,Z = sig_tpm,
+		tumorPurity = rep(0,ncol(bulk_tpm)),refVar = NULL,
+		rhoInit = NULL,maxIter_prop = 4e3,
+		maxIter_PP = 4e3,rhoConverge = 1e-2)
+	
+	# Extract proportion of transcripts per cell type per sample
+	pp_bar_icedt = t(fit$rho)[,-1]
+	
+	# Calculate proportion of cell type per sample
+	pp_hat_icedt = t(apply(pp_bar_icedt,1,function(xx){
+		yy = xx / cell_sizes; yy / sum(yy)
+	}))
+	
+	```
+ 
 ###
 
