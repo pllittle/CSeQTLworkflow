@@ -2,7 +2,6 @@
 
 ## To Dos
 
-* eQTL mapping code
 * Torus enrichment
 * GWAS enrichment
 
@@ -515,6 +514,9 @@ system(sprintf("wget %s",tmp_link))
 
 ## eQTL mapping
 
+<details>
+<summary>Click to expand!</summary>
+
 * **BULK** mode: If running bulk analyses, set `RHO` to a 
 matrix with `N` rows and 1 column and set `XX_trecPC` to 
 residual TReC PCs calculated **without accounting** for cell types. 
@@ -586,6 +588,8 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	```
 	
 	</details>
-	
+
+</details>
+
 ###
 
