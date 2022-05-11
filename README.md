@@ -553,7 +553,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	numASn 	# cutoff of samples having ASREC >= numAS
 	numAS_het 	# minimum number for sum(ASREC >= numAS & SNP %in% c(1,2))
 	cistrans 	# p-value cutoff on cis/trans testing to determine which p-value 
-				# (TReC-only or TReC+ASReC) to report
+			# (TReC-only or TReC+ASReC) to report
 	```
 	
 	eQTL mapping for one gene
