@@ -254,7 +254,10 @@ Publish template codes for pipeline
 
 * Get TReC and ASReC
 	
-	* Download asSeq source package
+	Download asSeq source package
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```Shell
 	url=https://github.com/Sun-lab/asSeq/raw
@@ -263,7 +266,9 @@ Publish template codes for pipeline
 	wget $url
 	```
 	
-	* Install R package and run `asSeq` to get unique reads and filter
+	</details>
+	
+	Install R package and run `asSeq` to get unique reads and filter
 	
 	<details>
 	<summary>Click to expand!</summary>
@@ -293,7 +298,7 @@ Publish template codes for pipeline
 	
 	</details>
 	
-	* Create exon image file
+	Create exon image file
 	
 	<details>
 	<summary>Click to expand!</summary>
@@ -311,7 +316,7 @@ Publish template codes for pipeline
 	
 	</details>
 	
-	* Get total read count (TReC)
+	Get total read count (TReC)
 	
 	<details>
 	<summary>Click to expand!</summary>
@@ -328,14 +333,22 @@ Publish template codes for pipeline
 	
 	</details>
 	
-	* Filter reads by Qname
+	Filter reads by Qname
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```Shell
 	samtools sort -n -o output.filtered.asSeq.sortQ.bam \
 		output.filtered.asSeq.bam
 	```
 	
-	* Extract allele-specific reads, outputs hap1.bam, hap2.bam, hapN.bam
+	</details>
+	
+	Extract allele-specific reads, outputs hap1.bam, hap2.bam, hapN.bam
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	het_snp_fn = "<tab delimited filename of heterozygous SNPs for sample>"
@@ -347,7 +360,12 @@ Publish template codes for pipeline
 		snpList = het_snp_fn,min.avgQ = 20,min.snpQ = 20)
 	```
 	
-	* Count allele-specific read counts (ASReC)
+	</details>
+	
+	Count allele-specific read counts (ASReC)
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	se1 = GenomicAlignments::summarizeOverlaps(features = genes,
@@ -361,7 +379,12 @@ Publish template codes for pipeline
 		singleEnd = !PE,ignore.strand = TRUE,fragments = PE)
 	```
 	
-	* Save read counts
+	</details>
+	
+	Save read counts
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	```R
 	ct1 = as.data.frame(SummarizedExperiment::assay(se1))
@@ -374,5 +397,7 @@ Publish template codes for pipeline
 		sep = "\t", eol = "\n")
 	```
 	
+	</details>
+
 ###
 
