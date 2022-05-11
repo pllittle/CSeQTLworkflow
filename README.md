@@ -1,6 +1,6 @@
 # CSeQTLworkflow
 
-<h1>To Dos</h1>
+<h2>To Dos</h2>
 
 * eQTL mapping code
 * Torus enrichment
