@@ -516,13 +516,13 @@ system(sprintf("wget %s",tmp_link))
 ## eQTL mapping
 
 * **BULK** mode: If running bulk analyses, set `RHO` to a 
-matrix with `N` rows and 1 column and set residual TReC PCs 
-(`XX_trecPC`) to those calculated without accounting for 
-cell types. 
+matrix with `N` rows and 1 column and set `XX_trecPC` to 
+residual TReC PCs calculated **without accounting** for cell types. 
 * **Cell type-specific** mode: If running cell type-specific 
 analyses, set `RHO` to estimated cell type proportions and 
-set residual TReC PCs to proportion-adjusted residual TReC PCs.
-* Inputs
+set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
+* Coding
+	Inputs
 	
 	```R
 	devtools::install_github("pllittle/smarter")
