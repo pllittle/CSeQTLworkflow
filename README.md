@@ -622,7 +622,8 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	Inputs
 	* `DATA`: R data.frame containing headers 'Chr', 'POS', and columns
 		leading with 'EE_' such as `'EE_Astrocyte'`, `'EE_Excitatory'`
-		corresponding to eQTL binary indicators 0 or 1
+		corresponding to eQTL binary indicators 0 or 1. Rows correspond to 
+		gene/SNP pairings
 	* `which_gwas`: Either `'gwas_catalog'` or some specific grouped phenotype
 	* `nBLOCKS`: Specify the block size for jackknife estimation and inference
 	
