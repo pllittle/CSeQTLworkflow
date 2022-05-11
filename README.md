@@ -522,6 +522,7 @@ residual TReC PCs calculated **without accounting** for cell types.
 analyses, set `RHO` to estimated cell type proportions and 
 set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 * Coding
+	
 	Inputs
 	
 	```R
