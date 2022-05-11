@@ -521,7 +521,10 @@ residual TReC PCs calculated **without accounting** for cell types.
 * **Cell type-specific (CTS)** mode: If running cell type-specific 
 analyses, set `RHO` to estimated cell type proportions and 
 set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
-* Coding
+* Example codes
+	
+	<details>
+	<summary>Click to expand!</summary>
 	
 	Inputs
 	
@@ -581,6 +584,8 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	gs_out$LRT_cistrans
 	
 	```
-
+	
+	</details>
+	
 ###
 
