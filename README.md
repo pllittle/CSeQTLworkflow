@@ -536,7 +536,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	XX = cbind(Int = 1,XX_base,XX_genoPC,XX_trecPC)
 	
 	TREC 	# TReC vector
-	SNP		# phased genotype vector
+	SNP	# phased genotype vector
 	hap2	# 2nd haplotype counts
 	ASREC # total haplotype counts = hap1 + hap2
 	PHASE # Indicator vector of whether or not to use haplotype counts
