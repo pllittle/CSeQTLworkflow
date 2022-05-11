@@ -522,9 +522,7 @@ cell types.
 * **Cell type-specific** mode: If running cell type-specific 
 analyses, set `RHO` to estimated cell type proportions and 
 set residual TReC PCs to proportion-adjusted residual TReC PCs.
-* Code
-	
-	Inputs
+* Inputs
 	
 	```R
 	devtools::install_github("pllittle/smarter")
