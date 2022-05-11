@@ -529,19 +529,31 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	devtools::install_github("pllittle/smarter")
 	devtools::install_github("pllittle/CSeQTL")
 	
-	# Inputs
+	# Sample-specific variables
+	RHO 			# cell type proportions matrix
 	XX_base 	# baseline covariates, continuous variables centered
 	XX_genoPC 	# genotype PCs, centered
 	XX_trecPC 	# residual TReC PCs, centered
 	XX = cbind(Int = 1,XX_base,XX_genoPC,XX_trecPC)
 	
+	# Gene and sample variables
 	TREC 	# TReC vector
 	SNP	# phased genotype vector
 	hap2	# 2nd haplotype counts
 	ASREC 	# total haplotype counts = hap1 + hap2
 	PHASE 	# Indicator vector of whether or not to use haplotype counts
-	RHO 	# cell type proportions matrix
+	
+	# Tuning arguments
 	trim 	# TRUE for trimmed analysis, FALSE for untrimmed
+	thres_TRIM # if trim = TRUE, the Cooks' distance cutoff to trim sample TReCs
+	ncores # number of threads/cores to parallelize the loop, improve runtime
+	
+	# ASREC-related cutoffs to satisfy to use allele-specific read counts
+	numAS 	# cutoff to determine if a sample has sufficient read counts
+	numASn 	# cutoff of samples having ASREC >= numAS
+	numAS_het # minimum number for sum(ASREC >= numAS & SNP %in% c(1,2))
+	cistrans # p-value cutoff on cis/trans testing to determine which p-value 
+						# (TReC-only or TReC+ASReC) to report
 	```
 	
 	eQTL mapping for one gene
@@ -550,7 +562,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	gs_out = CSeQTL_GS(XX = XX,TREC = TREC,SNP = SNP,hap2 = hap2,
 		ASREC = ASREC,PHASE = PHASE,RHO = RHO,trim = trim,
 		thres_TRIM = 20,numAS = 5,numASn = 5,numAS_het = 5,
-		cistrans = 0.01,ncores = 1,show = TRUE)
+		cistrans = 0.01,ncores = ncores,show = TRUE)
 	
 	```
 	
