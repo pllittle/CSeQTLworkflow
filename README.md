@@ -124,6 +124,9 @@ Publish template codes for pipeline
 
 ## BAM workflow
 
+<details>
+<summary>Click to expand!</summary>
+
 * BamToFastq
 	
 	<details>
@@ -397,6 +400,8 @@ Publish template codes for pipeline
 	```
 	
 	</details>
+
+</details>
 
 # Deconvolution
 
