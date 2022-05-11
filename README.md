@@ -515,21 +515,26 @@ system(sprintf("wget %s",tmp_link))
 
 ## eQTL mapping
 	
-Code for bulk or cell type-specific analyses for a gene. 
-If running bulk analyses, set `RHO` to a matrix with `N` rows
-and 1 column and set residual TReC PCs to those calculated without 
-accounting for cell types. If running cell type-specific analyses, 
-set `RHO` to estimated cell type proportions and set residual 
-TReC PCs to proportion-adjusted residual TReC PCs.
+Code for bulk or cell type-specific analyses for a gene.
+
+* **BULK** mode: If running bulk analyses, set `RHO` to a 
+matrix with `N` rows and 1 column and set residual TReC PCs 
+(`XX_trecPC`) to those calculated without accounting for 
+cell types. 
+* **Cell type-specific** mode: If running cell type-specific 
+analyses, set `RHO` to estimated cell type proportions and 
+set residual TReC PCs to proportion-adjusted residual TReC PCs.
 	
 	```R
 	devtools::install_github("pllittle/smarter")
 	devtools::install_github("pllittle/CSeQTL")
 	
 	# Inputs
-	XX 		# intercept + centered covariate matrix 
-				#		(baseline covariates, genotype PCs, 
-				#			residual TReC PCs)
+	XX_base 	# baseline covariates, continuous variables centered
+	XX_genoPC # genotype PCs, centered
+	XX_trecPC # residual TReC PCs, centered
+	XX = cbind(Int = 1,XX_base,XX_genoPC,XX_trecPC)
+	
 	TREC 	# TReC vector
 	SNP		# phased genotype vector
 	hap2	# 2nd haplotype counts
@@ -537,12 +542,29 @@ TReC PCs to proportion-adjusted residual TReC PCs.
 	PHASE # Indicator vector of whether or not to use haplotype counts
 	RHO 	# cell type proportions matrix
 	trim 	# TRUE for trimmed analysis, FALSE for untrimmed
+	```
 	
+	eQTL mapping for one gene
 	
-	CSeQTL_GS(XX = XX,TREC = TREC,SNP = SNP,hap2 = hap2,
+	```R
+	gs_out = CSeQTL_GS(XX = XX,TREC = TREC,SNP = SNP,hap2 = hap2,
 		ASREC = ASREC,PHASE = PHASE,RHO = RHO,trim = trim,
 		thres_TRIM = 20,numAS = 5,numASn = 5,numAS_het = 5,
 		cistrans = 0.01,ncores = 1,show = TRUE)
+	
+	```
+	
+	Hypothesis testing output
+	
+	```R
+	# TReC-only likelihood ratio test statistics with 1 DF
+	gs_out$LRT_trec
+	
+	# TReC+ASReC likelihood ratio test statistics with 1 DF
+	gs_out$LRT_trecase
+	
+	# Cis/Trans likelihood ratio test statistics with 1 DF
+	gs_out$LRT_cistrans
 	
 	```
 
