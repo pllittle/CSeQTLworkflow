@@ -16,6 +16,7 @@ Publish template codes for pipeline
 This repository contains template codes for 
 runnings workflow steps including
 
+* [Reference data](https://github.com/pllittle/CSeQTLworkflow#reference-data)
 * [CommonMind Consortium data preparation](https://github.com/pllittle/CSeQTLworkflow#commonmind-consortium)
 * [Blueprint data preparation](https://github.com/pllittle/CSeQTLworkflow#blueprint)
 * [BAM workflow to TReC/ASReC](https://github.com/pllittle/CSeQTLworkflow#bam-workflow)
