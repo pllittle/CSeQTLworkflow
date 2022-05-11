@@ -435,7 +435,8 @@ Publish template codes for pipeline
 	
 	```
 	
-	CIBERSORT
+	CIBERSORT: [[Paper](https://www.nature.com/articles/nmeth.3337), 
+		[Software](https://cibersort.stanford.edu/)]
 	
 	```R
 	sig_fn = file.path(work_dir,"signature.txt")
@@ -464,7 +465,8 @@ Publish template codes for pipeline
 	
 	```
 
-	ICeDT
+	ICeDT: [[Paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7529339/),
+		[Software](https://github.com/Sun-lab/ICeDt)]
 	
 	```R
 	fit = ICeDT::ICeDT(Y = bulk_tpm,Z = sig_tpm,
