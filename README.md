@@ -514,8 +514,6 @@ system(sprintf("wget %s",tmp_link))
 	</details>
 
 ## eQTL mapping
-	
-Code for bulk or cell type-specific analyses for a gene.
 
 * **BULK** mode: If running bulk analyses, set `RHO` to a 
 matrix with `N` rows and 1 column and set residual TReC PCs 
@@ -524,6 +522,9 @@ cell types.
 * **Cell type-specific** mode: If running cell type-specific 
 analyses, set `RHO` to estimated cell type proportions and 
 set residual TReC PCs to proportion-adjusted residual TReC PCs.
+* Code
+	
+	Inputs
 	
 	```R
 	devtools::install_github("pllittle/smarter")
