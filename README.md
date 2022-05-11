@@ -510,8 +510,34 @@ system(sprintf("wget %s",tmp_link))
 	}))
 	
 	```
- 
- </details>
- 
+
+	</details>
+
+## eQTL mapping
+
+	```R
+	devtools::install_github("pllittle/smarter")
+	devtools::install_github("pllittle/CSeQTL")
+	
+	# Inputs
+	XX 		# intercept + centered covariate matrix 
+				#		(baseline covariates, genotype PCs, 
+				#			residual TReC PCs)
+	TREC 	# TReC vector
+	SNP		# phased genotype vector
+	hap2	# 2nd haplotype counts
+	ASREC # total haplotype counts = hap1 + hap2
+	PHASE # Indicator vector of whether or not to use haplotype counts
+	RHO 	# cell type proportions matrix
+	trim 	# TRUE for trimmed analysis, FALSE for untrimmed
+	
+	
+	CSeQTL_GS(XX = XX,TREC = TREC,SNP = SNP,hap2 = hap2,
+		ASREC = ASREC,PHASE = PHASE,RHO = RHO,trim = trim,
+		thres_TRIM = 20,numAS = 5,numASn = 5,numAS_het = 5,
+		cistrans = 0.01,ncores = 1,show = TRUE)
+	
+	```
+
 ###
 
