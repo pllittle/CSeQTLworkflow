@@ -254,7 +254,7 @@ Publish template codes for pipeline
 
 * Get TReC and ASReC
 	
-	Download asSeq source package
+	* Download asSeq source package
 	
 	```Shell
 	url=https://github.com/Sun-lab/asSeq/raw
@@ -263,14 +263,14 @@ Publish template codes for pipeline
 	wget $url
 	```
 	
-	Install R package
+	* Install R package
 	
 	```R
 	install.packages(pkgs = "asSeq_0.99.501.tar.gz",
 		type = "source",repos = NULL)
 	```
 	
-	Run `asSeq` to get unique reads and filter
+	* Run `asSeq` to get unique reads and filter
 	
 	```R
 	PE = TRUE 
@@ -292,7 +292,7 @@ Publish template codes for pipeline
 		param = param1)
 	```
 	
-	Create exon image file
+	* Create exon image file
 	
 	```R
 	gtf_fn = "gencode.v26.GRCh38.ERCC.genes.gtf.gz"
@@ -305,7 +305,7 @@ Publish template codes for pipeline
 	saveRDS(exons_list_per_gene,gtf_rds_fn)
 	```
 	
-	Get total read count (TReC)
+	* Get total read count (TReC)
 	
 	```R
 	genes = readRDS(gtf_rds_fn)
@@ -317,14 +317,14 @@ Publish template codes for pipeline
 	ct = as.data.frame(SummarizedExperiment::assay(se))
 	```
 	
-	Filter reads by Qname
+	* Filter reads by Qname
 	
 	```Shell
 	samtools sort -n -o output.filtered.asSeq.sortQ.bam \
 		output.filtered.asSeq.bam
 	```
 	
-	Extract allele-specific reads, outputs hap1.bam, hap2.bam, hapN.bam
+	* Extract allele-specific reads, outputs hap1.bam, hap2.bam, hapN.bam
 	
 	```R
 	het_snp_fn = "<tab delimited filename of heterozygous SNPs for sample>"
@@ -336,7 +336,7 @@ Publish template codes for pipeline
 		snpList = het_snp_fn,min.avgQ = 20,min.snpQ = 20)
 	```
 	
-	Count allele-specific read counts (ASReC)
+	* Count allele-specific read counts (ASReC)
 	
 	```R
 	se1 = GenomicAlignments::summarizeOverlaps(features = genes,
@@ -350,7 +350,7 @@ Publish template codes for pipeline
 		singleEnd = !PE,ignore.strand = TRUE,fragments = PE)
 	```
 	
-	Save read counts
+	* Save read counts
 	
 	```R
 	ct1 = as.data.frame(SummarizedExperiment::assay(se1))
