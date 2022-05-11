@@ -595,7 +595,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 
 * Functional Enrichment with [Torus](https://github.com/xqwen/torus) 
 	with example code provided below based on this 
-	[markdown](https://github.com/xqwen/torus/blob/master/examples/GEUVADIS/README.md).
+	[markdown with examples and documentation](https://github.com/xqwen/torus/blob/master/examples/GEUVADIS/README.md).
 	
 	```Shell
 	torus -d eqtls.gz \
@@ -606,6 +606,35 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	```
 	
 * GWAS Enrichment with Jackknife-based inference
+
+	```R
+	library(CSeQTL)
+	
+	work_dir = "." # specify a work directory
+	
+	# Download GWAS catalog
+	gwas = CSeQTL:::get_GWAS_catalog(work_dir = work_dir)
+	
+	# Run GWAS enrichment
+	enrich_final = c()
+	
+	## Across all phenotypes
+	enrich_catalog = CSeQTL:::run_gwasEnrich_analysis(DATA = DATA,
+		work_dir = work_dir,which_gwas = "gwas_catalog",
+		nBLOCKS = 200,verbose = TRUE)
+	enrich_final = rbind(enrich_final,enrich_catalog)
+	
+	## Per grouped phenotype
+	all_phenos = unique(gwas$myPHENO)
+	all_phenos = all_phenos[all_phenos != "gwas_catalog"]
+	for(pheno in all_phenos){
+		enrich_pheno = CSeQTL:::run_gwasEnrich_analysis(DATA = DATA,
+			work_dir = work_dir,which_gwas = pheno,
+			nBLOCKS = 200,verbose = TRUE)
+		enrich_final = rbind(enrich_final,enrich_pheno)
+	}
+	
+	```
 
 ###
 
