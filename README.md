@@ -530,7 +530,7 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	devtools::install_github("pllittle/CSeQTL")
 	
 	# Inputs
-	XX_base 		# baseline covariates, continuous variables centered
+	XX_base 	# baseline covariates, continuous variables centered
 	XX_genoPC 	# genotype PCs, centered
 	XX_trecPC 	# residual TReC PCs, centered
 	XX = cbind(Int = 1,XX_base,XX_genoPC,XX_trecPC)
