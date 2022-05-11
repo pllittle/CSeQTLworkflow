@@ -518,7 +518,7 @@ system(sprintf("wget %s",tmp_link))
 * **BULK** mode: If running bulk analyses, set `RHO` to a 
 matrix with `N` rows and 1 column and set `XX_trecPC` to 
 residual TReC PCs calculated **without accounting** for cell types. 
-* **Cell type-specific** mode: If running cell type-specific 
+* **Cell type-specific (CTS)** mode: If running cell type-specific 
 analyses, set `RHO` to estimated cell type proportions and 
 set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 * Coding
@@ -554,7 +554,9 @@ set `XX_trecPC` to **proportion-adjusted** residual TReC PCs.
 	
 	```
 	
-	Hypothesis testing output
+	Hypothesis testing output. Matrices where rows are genomic loci 
+	and columns are cell types for **CTS** mode or a single column for 
+	**BULK** mode.
 	
 	```R
 	# TReC-only likelihood ratio test statistics with 1 DF
