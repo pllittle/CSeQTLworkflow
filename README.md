@@ -6,7 +6,7 @@
 * Torus enrichment
 * GWAS enrichment
 
-## Introduction
+## Introduction and Outline
 
 This repository contains template codes for 
 runnings workflow steps including
@@ -37,9 +37,10 @@ provided [here](https://github.com/Sun-lab/gtex_AnVIL).
 
 ## CommonMind Consortium
 
-Code to obtain CMC inputs
 <details>
 <summary>Click to expand!</summary>
+
+Code to obtain CMC inputs
 
 ```R
 # Install package
