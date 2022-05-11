@@ -2,11 +2,6 @@
 
 ## To Dos
 
-Publish template codes for pipeline
-
-* How GTEx brain and blood datasets processed
-	Cite gtexAnvil repo
-
 * eQTL mapping code
 * Torus enrichment
 * GWAS enrichment
@@ -23,12 +18,22 @@ runnings workflow steps including
 * [Deconvolution](https://github.com/pllittle/CSeQTLworkflow#deconvolution) with
 	CIBERSORT and ICeDT
 * eQTL mapping
+* Torus and GWAS enrichment
+
+for our [manuscript](https://www.biorxiv.org/content/10.1101/2022.03.31.486605v1) 
+**Cell Type-Specific Expression Quantitative Trait Loci**.
 
 ## Reference Data
 
 * [GTEx-pipeline for RNA-seq](https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md)
 * [Reference fasta](https://personal.broadinstitute.org/francois/topmed/Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC.tar.gz)
 * [GTF](https://personal.broadinstitute.org/francois/topmed/gencode.v26.GRCh38.ERCC.genes.gtf.gz)
+
+## GTEx Brain and Blood
+
+Since GTEx samples are available on the NHGRI AnVIL cloud, they
+were processed using a combination of Docker and WDL with details
+provided [here](https://github.com/Sun-lab/gtex_AnVIL).
 
 ## CommonMind Consortium
 
