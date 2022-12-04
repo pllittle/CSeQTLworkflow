@@ -1,0 +1,227 @@
+
+---
+title: "Filter Yazar et al. eQTL results"
+author: "Si Liu and Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+
+One eGene may have up to 5 eSNPs. We only keep the 1st eSNP. Then we filter out the eGenes whose eSNP is beyond 50kb of the gene. Some cell types, such as CD4 SOX4, has a small proportion of eSNPs within 50kb of the corresponding eGene, and it is likely due to low accuracy of eQTL results, which is in turn, due to smaller number of cells or other reasons. 
+
+# Setup
+
+## Load R libraries
+```{r}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+theme_set(theme_classic())
+
+is.unq <- function(x) length(x)==length(unique(x))
+
+```
+
+
+## Data directory and file names
+```{r}
+data_dir = "../../CSeQTL/Yazar_2022/"
+hg19_symbol_ensemblID_file = "hg19_gene_symbol_ensemblID.txt"
+Yazar_2022_dir   = "science.abf3041_tables_s6_to_s19/"
+Yazar_2022_table = "science.abf3041_tables_s6_to_s19.xlsx"
+geneloc_dir = "OneK1K_cohort_cis_eQTL_input_files/Gene_Location_Files/"
+```
+
+## Load hg19 gene symbol ensemblID
+
+```{r}
+hg19_symbol_ensembID <- read.delim(paste0(data_dir, 
+                                          hg19_symbol_ensemblID_file))
+dim(hg19_symbol_ensembID)
+head(hg19_symbol_ensembID)
+
+length(unique(hg19_symbol_ensembID$gene_id))
+length(unique(hg19_symbol_ensembID$GeneSymbol))
+table(hg19_symbol_ensembID$Class, useNA="ifany")
+table(hg19_symbol_ensembID$Strand, useNA="ifany")
+```
+
+# Read eQTL mapping results and keep the eQTLs identified in the first round of eQTL mapping
+```{r}
+Yazar_2022 <- read_excel(paste0(data_dir, Yazar_2022_dir, 
+                                Yazar_2022_table), 
+                         sheet = "Table.S10", skip = 2)
+
+Yazar_2022 = as.data.frame(Yazar_2022)
+dim(Yazar_2022)
+head(Yazar_2022)
+length(unique(Yazar_2022$`Gene ID`))
+length(unique(Yazar_2022$`Gene Ensembl ID`))
+
+Yazar_eSNP1 = Yazar_2022[which(Yazar_2022$`eSNP rank` == "eSNP1"), ]
+dim(Yazar_eSNP1)
+head(Yazar_eSNP1)
+table(Yazar_eSNP1$`Cell type`)
+
+colSums(is.na(Yazar_eSNP1))
+```
+
+# Prepare distance from SNP to gene
+
+Gene location files were shared by by Yazar et al., and they were text files, one per chromosome. 
+
+```{r}
+col_names = c("geneid", "chr", "start", "end", "strand")
+
+Yazar_gene_loc = data.frame(matrix(ncol=5, nrow=0, 
+                               dimnames=list(NULL, col_names)))
+
+for (i in c(1:22)){
+  gene_loc_i = read.csv(paste0(data_dir, geneloc_dir, 
+                               "geneloc_chr", as.character(i), ".tsv"), 
+                        sep = "\t", header=TRUE)
+  
+  Yazar_gene_loc = rbind(Yazar_gene_loc, gene_loc_i)
+}
+
+# the geneid is unique with no overlap between chromosomes
+dim(Yazar_gene_loc)
+stopifnot(is.unq(Yazar_gene_loc$geneid))
+
+# some rows from Yazar_eSNP1 have genes with gene ID 
+# that do not exist in gene_loc files
+table(Yazar_eSNP1$`Gene ID` %in% Yazar_gene_loc$geneid)
+missed = Yazar_eSNP1[!(Yazar_eSNP1$`Gene ID` %in% Yazar_gene_loc$geneid),]
+missed[,1:6]
+table(missed$`Gene ID`)
+
+# only keep those with gene ID existing in gene_loc files
+Yazar_eSNP1 = Yazar_eSNP1[which(Yazar_eSNP1$`Gene ID` 
+                                %in% Yazar_gene_loc$geneid),]
+
+# match gene location information
+Yazar_gene_loc_matched = Yazar_gene_loc[match(Yazar_eSNP1$`Gene ID`, 
+                                              Yazar_gene_loc$geneid), ]
+head(Yazar_gene_loc_matched)
+
+# verify matching of chromosome information
+stopifnot(all(Yazar_eSNP1$Chromosome == Yazar_gene_loc_matched$chr))
+
+# create a column for distance to the gene
+Yazar_eSNP1$start = Yazar_gene_loc_matched$start
+Yazar_eSNP1$end   = Yazar_gene_loc_matched$end
+
+outside_vec = (Yazar_eSNP1$Position < Yazar_eSNP1$start) | 
+  (Yazar_eSNP1$Position > Yazar_eSNP1$end)
+outside_vec = as.numeric(outside_vec)
+
+pre_dist = pmin(abs(Yazar_eSNP1$Position - Yazar_eSNP1$start), 
+                abs(Yazar_eSNP1$Position - Yazar_eSNP1$end))
+Yazar_eSNP1$dist = outside_vec * pre_dist
+
+# verify matching of ensembl ID
+table(Yazar_eSNP1$`Gene ID` %in% hg19_symbol_ensembID$GeneSymbol)
+hg19_matched = hg19_symbol_ensembID[match(Yazar_eSNP1$`Gene ID`, 
+                                          hg19_symbol_ensembID$GeneSymbol), ]
+table(Yazar_eSNP1$`Gene Ensembl ID` == hg19_matched$gene_id)
+
+# one gene has two gene ensembl IDs one for Strand - and one for Strand +
+# it is to keep this gene
+Yazar_eSNP1[which(Yazar_eSNP1$`Gene Ensembl ID` != hg19_matched$gene_id),]
+hg19_symbol_ensembID[which(hg19_symbol_ensembID$GeneSymbol=="RBL1"),]
+```
+
+
+
+# Filter Yazar 2022 eGenes, keep those with eSNP within 50kb of the gene. 
+
+```{r}
+cell_types = unique(Yazar_eSNP1$`Cell type`)
+cell_types
+
+p_list = list()
+
+start_length_v = rep(NA, length(cell_types))
+kept_prop_v    = rep(NA, length(cell_types))
+
+for (i in c(1:length(cell_types))){
+  
+  ct = cell_types[i]
+  ct_string = sub(" ", "_", ct)
+  
+  df_cur_ct = 
+    Yazar_eSNP1[which(Yazar_eSNP1$`Cell type` == ct), ]
+  
+  start_length_v[i] = dim(df_cur_ct)[1]
+  
+  p_list[[i]] = ggplot(df_cur_ct, aes(x=log10(dist+1))) +
+    geom_histogram(color="darkblue", fill="lightblue") + 
+    geom_vline(aes(xintercept = log10(50000+1)), colour="blue") + 
+    ggtitle(ct_string)
+  
+  kept_prop_v[i] = mean(df_cur_ct$dist <= 50000)
+  
+  df_cur_ct_kept = df_cur_ct[which(df_cur_ct$dist <= 50000), ]
+  
+  stopifnot(is.unq(df_cur_ct_kept$`Gene Ensembl ID`))
+
+  write.csv(df_cur_ct_kept, 
+            file = paste0(data_dir, "Yazar_eSNP1_50kb/", 
+                          "Yazar_eSNP1_50kb_", ct_string, ".csv"),  
+            row.names = FALSE)
+  
+}
+
+ggarrange(plotlist=p_list, nrow = 4, ncol = 4)
+
+```
+
+# Summarize proportion of eQTLs kept after filtering by 50kb distance.
+
+```{r fig.width=5, fig.height=4}
+
+df_kept_prop = data.frame(start_len = start_length_v, 
+                          kept_prop = kept_prop_v, 
+                          cell_type = cell_types)
+df_kept_prop = df_kept_prop[order(df_kept_prop$kept_prop),]
+df_kept_prop
+
+ggplot(data = df_kept_prop,aes(x=log10(start_len), 
+                               y=kept_prop, color=cell_type)) +
+  geom_point() + xlab("log10(# of eGenes)") + 
+  ylab("prop of eGenes with eSNP1 within 50kb") + 
+  theme(legend.position="none") + 
+  geom_text_repel(data = df_kept_prop, aes(label = cell_type))
+
+write.csv(df_kept_prop, file = "./results/step1_prop_eSNP1_50kb.csv", 
+          row.names = FALSE)
+```
+
+
+# Session information
+
+```{r}
+gc()
+
+sessionInfo()
+
+```
+

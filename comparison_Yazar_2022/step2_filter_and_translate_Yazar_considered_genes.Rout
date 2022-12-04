@@ -1,0 +1,184 @@
+
+R version 4.1.2 (2021-11-01) -- "Bird Hippie"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> # Filter and translate the Yazar genes considered for testing for each cell type
+> 
+> # (1) only keep the genes existing gene location files sent by Yazar et al. 
+> # (2) translate Yazar genes from gene names to gene ensemblID, 
+> #     using a processed file from hg19 gene reference
+> 
+> 
+> library(data.table)
+> library(readxl)
+> library(stringr)
+> is.unq <- function(x) length(x)==length(unique(x))
+> 
+> 
+> data_dir = "../../CSeQTL/Yazar_2022/"
+> Yazar_2022_dir   = "science.abf3041_tables_s6_to_s19/"
+> Yazar_2022_table = "science.abf3041_tables_s6_to_s19.xlsx"
+> geneloc_dir = "OneK1K_cohort_cis_eQTL_input_files/Gene_Location_Files/"
+> hg19_symbol_ensemblID_file = "hg19_gene_symbol_ensemblID.txt"
+> 
+> 
+> # Load gene location files sent by Yazar et al. 
+> 
+> col_names = c("geneid", "chr", "start", "end", "strand")
+> 
+> Yazar_gene_loc = data.frame(matrix(ncol=5, nrow=0, 
++                                    dimnames=list(NULL, col_names)))
+> 
+> for (i in c(1:22)){
++   gene_loc_i = read.csv(paste0(data_dir, geneloc_dir, 
++                                "geneloc_chr", as.character(i), ".tsv"), 
++                         sep = "\t", header=TRUE)
++   
++   Yazar_gene_loc = rbind(Yazar_gene_loc, gene_loc_i)
++ }
+> 
+> dim(Yazar_gene_loc)
+[1] 31434     5
+> 
+> 
+> # read hg19 gene symbol and ensemblID
+> 
+> hg19_symbol_ensembID <- read.delim(paste0(data_dir, 
++                                           hg19_symbol_ensemblID_file))
+> dim(hg19_symbol_ensembID)
+[1] 32738     5
+> head(hg19_symbol_ensembID)
+          gene_id   GeneSymbol      Chromosome          Class Strand
+1 ENSG00000243485   MIR1302-10   1:29554-31109        lincRNA      +
+2 ENSG00000237613      FAM138A   1:34554-36081        lincRNA      -
+3 ENSG00000186092        OR4F5   1:69091-70008 protein_coding      +
+4 ENSG00000238009 RP11-34P13.7  1:89295-133566        lincRNA      -
+5 ENSG00000239945 RP11-34P13.8   1:89551-91105        lincRNA      -
+6 ENSG00000237683   AL627309.1 1:134901-139379 protein_coding      -
+> 
+> # all gene names in Yazar_gene_loc fall into hg19_symbol_ensembID
+> table(Yazar_gene_loc$geneid %in% hg19_symbol_ensembID$GeneSymbol)
+
+ TRUE 
+31434 
+> 
+> 
+> # Filter and translate
+> 
+> Yazar_cell_types = c("B IN", "B Mem", "CD4 NC", "CD4 ET", "CD4 SOX4", "CD8 NC", 
++                      "CD8 ET", "CD8 S100B", "DC", "Mono C", "Mono NC", "NK R",     
++                      "NK", "Plasma")
+> 
+> # load file for Yazar 2022 genes considered for testing
+> Yazar_2022_genes <- read_excel(paste0(data_dir, Yazar_2022_dir, Yazar_2022_table), 
++                                sheet = "Table.S8", skip = 2)
+> colSums(!is.na(Yazar_2022_genes))
+   CD4 NC    CD4 ET  CD4 SOX4    CD8 ET    CD8 NC CD8 S100B        NK      NK R 
+    15421     12025      6340     13786     13488     11018     13550      8804 
+   Plasma     B Mem      B IN    Mono C   Mono NC        DC 
+     7199     11643     12211     11401     10073      9732 
+> 
+> n_con_Yazar_raw_list = list()
+> n_con_Yazar_loc_list = list()
+> n_con_Yazar_list     = list()
+> gene_con_Yazar_list  = list()
+> 
+> id_unique_flag_v = rep(NA, length(Yazar_cell_types))
+> 
+> for (i in 1:length(Yazar_cell_types)){
++   
++   ct = Yazar_cell_types[i]
++   ct_string = sub(" ", "_", ct)
++   
++   Yazar_ct_eGenes_path = paste0(data_dir, "Yazar_eSNP1_50kb/", 
++                                 "Yazar_eSNP1_50kb_", ct_string, ".csv")
++   df_Yazar_ct_eGenes = read.csv(Yazar_ct_eGenes_path, header = TRUE)
++   
++   Yazar_ct_eGene_names = df_Yazar_ct_eGenes$Gene.ID
++   
++   # verify whether all kept Yazar eGenes have name belonging to the genes considered
++   stopifnot(all(Yazar_ct_eGene_names %in% Yazar_2022_genes[[ct]]))
++   
++   # filter out genes that have name not existing in any of the gene_loc files
++   ct_loc_Yazar = intersect(Yazar_2022_genes[[ct]], Yazar_gene_loc$geneid)
++   # it has been verified in earlier  that all gene names in 
++   # Yazar_gene_loc fall into hg19_symbol_ensembID
++   # so all genes in ct_loc_Yazar also fall into hg19_symbol_ensembID 
++   mat1 = match(ct_loc_Yazar, hg19_symbol_ensembID$GeneSymbol)
++   ct_considered_Yazar = hg19_symbol_ensembID[mat1,]$gene_id
++   
++   n_con_Yazar_raw_list[[ct_string]] = sum(!is.na(Yazar_2022_genes[[ct]]))
++   n_con_Yazar_loc_list[[ct_string]] = length(ct_loc_Yazar)
++   n_con_Yazar_list[[ct_string]]     = length(ct_considered_Yazar)
++   gene_con_Yazar_list[[ct_string]]  = ct_considered_Yazar
++   
++   # see whether different gene symbols have different ensembl id 
++   id_unique_flag_v[i] = is.unq(ct_considered_Yazar)
++   
++ }
+> 
+> as.numeric(unlist(n_con_Yazar_raw_list))
+ [1] 12211 11643 15421 12025  6340 13488 13786 11018  9732 11401 10073  8804
+[13] 13550  7199
+> as.numeric(unlist(n_con_Yazar_loc_list))
+ [1] 12195 11627 15403 12008  6328 13470 13768 11003  9719 11383 10059  8792
+[13] 13531  7186
+> as.numeric(unlist(n_con_Yazar_list))
+ [1] 12195 11627 15403 12008  6328 13470 13768 11003  9719 11383 10059  8792
+[13] 13531  7186
+> 
+> id_unique_flag_v
+ [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+> 
+> saveRDS(gene_con_Yazar_list, 
++         file = paste0(data_dir, "Yazar_gene_considered.rds"))
+> 
+> gc()
+          used (Mb) gc trigger (Mb) limit (Mb) max used (Mb)
+Ncells  693327 37.1    1378468 73.7         NA  1378468 73.7
+Vcells 1984566 15.2    8388608 64.0      32768  7635428 58.3
+> 
+> sessionInfo()
+R version 4.1.2 (2021-11-01)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] stringr_1.4.0     readxl_1.3.1      data.table_1.14.2
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.7       fansi_0.5.0      crayon_1.4.2     utf8_1.2.2      
+ [5] cellranger_1.1.0 lifecycle_1.0.1  magrittr_2.0.1   pillar_1.6.4    
+ [9] rlang_1.0.4      stringi_1.7.6    cli_3.3.0        vctrs_0.3.8     
+[13] ellipsis_0.3.2   tools_4.1.2      compiler_4.1.2   pkgconfig_2.0.3 
+[17] tibble_3.1.6    
+> q(save="no")
+> proc.time()
+   user  system elapsed 
+  1.235   0.217   1.580 

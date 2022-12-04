@@ -1,0 +1,447 @@
+
+---
+title: "Overlap of cell-type-specific eQTLs between Yazar_2022 and CSeQTL"
+author: "Si Liu and Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+params:
+  cs_q_cutoff: 5e-3
+  fold_cutoff: 1
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+This code checks the overlap between the eGenes after combining cell types from Yazar et al. to larger categories, e.g., CD4T or CD8T. 
+
+# Setup
+
+
+## Load R libraries
+
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+
+Other_method = "Yazar_2022"
+
+get_pi0 <- function(pval){
+  mean(pval==1, na.rm = TRUE) + 
+  2*sum((pval > 0.5) & (pval < 1), na.rm = TRUE) / sum(!is.na(pval))
+}
+
+len_unique <- function(x){
+  return(length(unique(x)))
+}
+
+# params = list(cs_q_cutoff=5e-3, fold_cutoff=1)
+cs_q_cutoff = params$cs_q_cutoff
+fold_cutoff = params$fold_cutoff
+
+cat("cs_q_cutoff: ",  cs_q_cutoff,  "\n")
+cat("fold_cutoff: ",  fold_cutoff,  "\n")
+
+config = sprintf("cs_q_%.0e_fold_%.1f", 
+                 cs_q_cutoff, fold_cutoff)
+config
+```
+
+## Data directory and file names
+```{r}
+CSeQTL_dir     = "../../CSeQTL/data2share/"
+GTEx_eqtl_file = "GTExBlood_eqtls.rds"
+
+Yazar_2022_dir = "../../CSeQTL/Yazar_2022/"
+
+Yazar_2022_kept_folder = "Yazar_eSNP1_50kb/"
+Yazar_2022_genes       = "Yazar_gene_considered.rds"
+```
+
+# Get overlap
+
+## Load the genes considered for eQTL mapping in each cell type by Yazar et al. 
+
+```{r}
+Yazar_gene_list = readRDS(paste0(Yazar_2022_dir, Yazar_2022_genes))
+length(Yazar_gene_list)
+
+sapply(Yazar_gene_list, length)
+sapply(Yazar_gene_list, len_unique)
+```
+
+## Combine cell types
+```{r}
+ct_groups = list(B = c("B_IN", "B_Mem"), 
+                 CD4T = c("CD4_NC", "CD4_ET"),
+                 CD8T = c("CD8_NC", "CD8_ET", "CD8_S100B"),
+                 Monocyte = c("Mono_C", "Mono_NC"),
+                 NK = c("NK_R", "NK"))
+
+Yazar_gene_grp = list()
+
+for(ct1 in names(ct_groups)){
+  Yazar_gene_grp[[ct1]] = unique(unlist(Yazar_gene_list[ct_groups[[ct1]]]))
+}
+
+sapply(Yazar_gene_grp, length)
+sapply(Yazar_gene_grp, len_unique)
+
+```
+
+## Load the genes considered under each cell type by CSeQTL
+
+```{r}
+GTExBlood <- readRDS(paste0(CSeQTL_dir, GTEx_eqtl_file))
+lapply(GTExBlood, dim)
+
+cs_result = GTExBlood$eqtl[GTExBlood$eqtl$trim==TRUE & 
+                             GTExBlood$eqtl$perm==FALSE & 
+                             GTExBlood$eqtl$MODEL=="cseqtl" & 
+                             (!is.na(GTExBlood$eqtl$PVAL)), ]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+cs_result = cs_result[-which(cs_result$CELLTYPE %in% 
+                               c("Bulk", "OTHER")),]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+# define a function to remove version number from gene id
+rm_version <- function(id_w_version){
+   gsub("\\..*", "", id_w_version)
+}
+
+cs_result$ENSG_version = cs_result$ENSG
+cs_result$ENSG = rm_version(cs_result$ENSG_version)
+
+ww2 = abs(log10(cs_result$ETA)) >= log10(fold_cutoff)
+ww2 = ww2 & cs_result$qvalue < cs_q_cutoff
+
+cs_result$eQTL = rep("NO", nrow(cs_result))
+cs_result$eQTL[ww2] = "YES"
+
+CSeQTL_gene_list = tapply(cs_result$ENSG, 
+                          cs_result$CELLTYPE, function(v){v})
+
+sapply(CSeQTL_gene_list, length)
+```
+
+
+## Cell type names
+
+"cs" stands for CSeQTL and "ot" stands for other study, which is Yazar et al. 2022 here. 
+
+```{r}
+cs_cell_types = c("B", "CD4T", "CD8T", "Monocyte", "NK")
+ot_cell_types = c("B", "CD4T", "CD8T", "Monocyte", "NK")
+```
+
+
+## Get the union of all the eGenes from CSeQTL
+
+```{r}
+table(cs_result$eQTL, cs_result$CELLTYPE, useNA = "ifany")
+
+union_cs_eGenes = unique(cs_result$ENSG[cs_result$eQTL=="YES"])
+length(union_cs_eGenes)
+union_cs_eGenes[1:5]
+```
+
+## Compare results form CSeQTL and Yazar et al.
+
+To avoid unbalanced number of eQTLs across cell types, keep top 300 eGenes for CSeQTL study and top 500 eGenes for Yazar et al.
+
+```{r}
+
+mat_cs_vs_ot= matrix(NA, nrow=length(cs_cell_types), 
+                      ncol=length(ot_cell_types))
+rownames(mat_cs_vs_ot) = cs_cell_types
+colnames(mat_cs_vs_ot) = ot_cell_types
+
+prop_mat_ot      = mat_cs_vs_ot
+prop_mat_cs      = mat_cs_vs_ot
+prop_mat_union   = mat_cs_vs_ot
+ratio_obs_vs_exp = mat_cs_vs_ot
+relative_ratios  = mat_cs_vs_ot
+fisher_mat       = mat_cs_vs_ot
+pi1_hat_mat_ot   = mat_cs_vs_ot
+n_eGenes_ot      = mat_cs_vs_ot
+
+pdf(width = 12, height = 6, 
+    sprintf("figures/%s_grouped_eGenes_CSeQTL_pval_hist.pdf", 
+            Other_method))
+
+for (i in 1:length(ot_cell_types)){
+  
+  ot_ct    = ot_cell_types[i]
+  ct_grp_i = ct_groups[[ot_ct]]
+  
+  ot_result_i = NULL
+  
+  for(ot_ct_j in ct_grp_i){
+    ot_ct_str = sub(" ", "_", ot_ct_j)
+    ot_eGenes_i_path = paste0(Yazar_2022_dir, Yazar_2022_kept_folder, 
+                              "Yazar_eSNP1_50kb_", ot_ct_str, ".csv")
+    
+    ot_ct_result = read.csv(ot_eGenes_i_path, header = TRUE)
+    ot_result_i  = rbind(ot_result_i, ot_ct_result)
+  }
+
+  dim(ot_result_i)
+  ot_result_i[1:5,]
+  table(ot_result_i$Cell.type)
+  
+  ot_eGenes_df = tapply(ot_result_i$qvalue, 
+                       ot_result_i$Gene.Ensembl.ID, min)
+  
+  ot_eGenes_df = data.frame(Gene.Ensembl.ID = names(ot_eGenes_df), 
+                            qvalue=ot_eGenes_df)
+  ot_eGenes_df = ot_eGenes_df[order(ot_eGenes_df$qvalue),]
+  summary(ot_eGenes_df$qvalue)
+  
+  cat(ot_ct," number of eGenes: ", nrow(ot_eGenes_df), "\n")
+
+  ot_eGenes_i = ot_eGenes_df$Gene.Ensembl.ID[1:min(500,nrow(ot_eGenes_df))]
+  
+  # genes that are included in the eQTL mapping by Yazar et al.
+  ot_ct_considered  = Yazar_gene_grp[[ot_ct]]
+
+  # adjust the union of CSeQTL eGenes
+  union_cs_eGenes_i = intersect(union_cs_eGenes, ot_ct_considered)
+  
+  # calculate base_union_ratio:
+  # among the CSeQTL eGenes across all the cell types, what proportion 
+  # overlaps with the eGenes in the i-th cell type by the other study
+
+  base_union_ratio = length(intersect(ot_eGenes_i, union_cs_eGenes_i))
+  base_union_ratio = base_union_ratio / length(union_cs_eGenes_i)
+
+  p_ct_list = list()
+  
+  
+  for (j in 1:length(cs_cell_types)){
+    
+    cs_ct = cs_cell_types[j]
+    cs_ct_result = cs_result[cs_result$CELLTYPE == cs_ct,]
+    cs_ct_result = cs_ct_result[order(cs_ct_result$qvalue),]
+    cs_eGenes_j  = cs_ct_result$ENSG[cs_ct_result$eQTL=="YES"]
+    
+    if(length(cs_eGenes_j) > 300){ cs_eGenes_j = cs_eGenes_j[1:300] }
+
+    # genes that are included in the eQTL mapping
+    cs_ct_considered = CSeQTL_gene_list[[cs_ct]]
+    
+    overlap_considered = intersect(ot_ct_considered, cs_ct_considered)
+    
+    # filter the eGenes from Yazar 2022 and CSeQTLto keep those 
+    # in the overlap of 'overlap_considered'
+    
+    ot_ij_eGenes = intersect(ot_eGenes_i, overlap_considered)
+    cs_ij_eGenes = intersect(cs_eGenes_j, overlap_considered)
+    
+    n_eGenes_ot[j,i] = length(ot_ij_eGenes)
+    
+    eGenes_overlap = intersect(ot_ij_eGenes, cs_ij_eGenes)
+
+    prop_mat_ot[j,i] = length(eGenes_overlap)/length(ot_ij_eGenes)
+    prop_mat_cs[j,i] = length(eGenes_overlap)/length(cs_ij_eGenes)
+
+    union_eGenes = union(ot_ij_eGenes, cs_ij_eGenes)
+    prop_mat_union[j,i] = length(eGenes_overlap)/length(union_eGenes)
+    
+    # positive/negative by other method and CSeQTL.
+    pp = length(eGenes_overlap)
+    pn = length(setdiff(ot_ij_eGenes, eGenes_overlap))
+    np = length(setdiff(cs_ij_eGenes, eGenes_overlap))
+    nn = length(setdiff(overlap_considered, union_eGenes))
+    
+    stopifnot(pp+pn+np+nn == length(overlap_considered))
+    
+    # ratio between observed and expected
+    ratio_obs_vs_exp[j,i] = (pp*(pp+pn+np+nn))/((pp+pn)*(pp+np))
+    
+    # relative ratio, compare the true discovery rate across cell types.
+    TDR_cs_ij = pp/(pp + np)
+    relative_ratios[j,i] = TDR_cs_ij/base_union_ratio
+
+    # Fisher's exact test
+    mat_test = matrix(c(pp, np, pn, nn), nrow = 2)
+    rownames(mat_test) = c("Yazar eGenes", "Yazar Non-eGenes")
+    colnames(mat_test) = c("CSeQTL eGenes", "CSeQTL Non-eGenes")
+
+    cat("Other:", ot_ct, "CSeQTL:", cs_ct, "\n")
+    print(mat_test)
+    cat("\n")
+    
+    fisher_mat[j,i] = fisher.test(mat_test, 
+                                  alternative = "greater")$p.value
+    
+    # get CSeQTL pvalue for the eGenes by the other method
+    ot_eGenes_CSeQTL_pvalues = 
+    cs_ct_result[match(ot_ij_eGenes, cs_ct_result$ENSG),]$permutation_PVAL
+    
+    # Use p-value distribution to estimate the proportion of null
+    pi0_hat = get_pi0(ot_eGenes_CSeQTL_pvalues)
+    pi0_hat = min(1, pi0_hat)
+    pi1_hat_mat_ot[j,i] = 1 - pi0_hat
+
+    # p-value histogram
+    df_ct_plot_pvalues = data.frame(pvalue = ot_eGenes_CSeQTL_pvalues)
+    
+    p_ct_list[[j]] = ggplot(df_ct_plot_pvalues, aes(x=pvalue)) +
+      geom_histogram(color="darkblue", fill="lightblue",
+                     breaks=seq(0,1,by=0.02)) + 
+                     ggtitle(paste0(Other_method, ": ", ot_ct, 
+                                    "\nCSeQTL: ", cs_ct, 
+                                    "\npi_0: ", signif(pi0_hat, 2)))
+  }
+  
+  print(ggarrange(plotlist=p_ct_list, nrow = 2, ncol = 4))
+  
+}
+
+dev.off()
+
+n_eGenes_ot
+```
+
+## Plots
+```{r fig.width=4.2, fig.height=3}
+theme1 = theme(axis.text.x = element_text(angle = 60, vjust = 1, 
+                                   size = 11, hjust = 1),
+               axis.text.y = element_text(size = 11))
+
+# among eGenes of other method, what proportion was recovered by CSeQTL
+melted_prop_mat_ot = reshape2::melt(prop_mat_ot,
+                          varnames=c("CSeQTL", Other_method))
+names(melted_prop_mat_ot)[1:2] = c("CSeQTL", Other_method)
+
+round(prop_mat_ot,2)
+
+ggplot(data = melted_prop_mat_ot, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") + 
+  ggtitle(paste("Prop. overlap among", 
+                Other_method, "eGenes")) + theme1
+
+melted_prop_mat_cs = reshape2::melt(prop_mat_cs,
+                          varnames=c("CSeQTL", Other_method))
+
+round(prop_mat_cs, 2)
+ggplot(data = melted_prop_mat_cs, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") +  
+  ggtitle("Prop. overlap among CSeQTL eGenes") + theme1
+
+
+melted_prop_mat_union = reshape2::melt(prop_mat_union, 
+                              varnames=c("CSeQTL", Other_method))
+
+round(prop_mat_union, 2)
+ggplot(data = melted_prop_mat_union, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red")+ 
+  ggtitle("Prop. overlap among union of eGenes") + theme1
+
+
+melted_ratio = reshape2::melt(ratio_obs_vs_exp,
+                    varnames=c("CSeQTL", Other_method))
+
+round(ratio_obs_vs_exp, 2)
+ggplot(data = melted_ratio, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 1) + 
+  ggtitle("ratio of observed/expected overlap") + theme1
+
+
+melted_relative_ratios = reshape2::melt(relative_ratios,
+                            varnames=c("CSeQTL", Other_method))
+
+round(relative_ratios, 2)
+ggplot(data = melted_relative_ratios[!is.na(melted_relative_ratios$value),], 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 1) + 
+  ggtitle("relative ratio") + theme1
+
+fisher_mat_cut = fisher_mat
+fisher_mat_cut[fisher_mat < (10^(-10))] = 10^(-10)
+
+melted_fisher_mat = reshape2::melt(-log10(fisher_mat_cut),
+                      varnames=c("CSeQTL", Other_method))
+
+round(-log10(fisher_mat_cut), 2)
+ggplot(data = melted_fisher_mat, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = -log10(0.05), name="-log10(pvalue)") + 
+  ggtitle("-log10(pvalue) for overlap") + theme1
+
+melted_pi1 = reshape2::melt(pi1_hat_mat_ot, 
+                varnames=c("CSeQTL", Other_method))
+
+round(pi1_hat_mat_ot,3)
+ggplot(data = melted_pi1, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") +  
+  ggtitle(paste("pi1 of", Other_method, "eGenes")) + 
+  theme1
+```
+
+
+## Write out results
+
+```{r}
+write.csv(as.data.frame(prop_mat_cs), row.names = TRUE, 
+          file = sprintf("results/step3b_%s_prop_overlap_among_CSeQTL.csv",
+                         config))
+
+write.csv(as.data.frame(ratio_obs_vs_exp), row.names = TRUE, 
+          file = sprintf("results/step3b_%s_ratio_obs_vs_exp.csv",
+                         config))
+
+write.csv(as.data.frame(relative_ratios), row.names = TRUE, 
+          file = sprintf("results/step3b_%s_relative_ratios.csv",
+                         config))  
+
+write.csv(as.data.frame(fisher_mat), row.names = TRUE, 
+          file = sprintf("results/step3b_%s_overlap_fisher_pvalue.csv",
+                         config))
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

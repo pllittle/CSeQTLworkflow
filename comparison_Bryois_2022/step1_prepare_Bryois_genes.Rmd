@@ -1,0 +1,266 @@
+
+---
+title: "Prepare Bryois genes "
+author: "Si Liu and Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+For each cell type, we extract the genes considered by Bryois for testing and only keep those that exist in gene_info_v26.rds. For eGenes, for each cell type, we filter out the eGenes that either do not exist in gene_info_v26.rds or with eSNP beyond 50kb of the gene body. 
+
+# Setup
+
+## Load R libraries
+```{r}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+
+theme_set(theme_classic())
+is.unq <- function(x) length(x)==length(unique(x))
+```
+
+## Data directory and file name
+```{r}
+gene_info_dir = "../../CSeQTL/data2share/"
+info_v26_file = "gene_info_v26.rds"
+
+Bryois_2022_data_dir = "../../CSeQTL/Bryois_2022/"
+
+Bryois_gene_file = "41593_2022_1128_MOESM3_ESM.xlsx"
+Bryois_snp_pos_file = "snp_pos.txt.gz"
+
+Bryois_eGene_folder = "Bryois_eGenes_50kb/"
+
+cell_types = c("Astrocytes", "Endothelial cells", "Excitatory neurons", 
+               "Inhibitory neurons",  "Microglia", "Oligodendrocytes", 
+               "OPCs / COPs", "Pericytes" )
+```
+
+
+## Process gene_info_v26.rds file
+```{r}
+gene_info_v26 <- readRDS(paste0(gene_info_dir, info_v26_file))
+
+dim(gene_info_v26)
+head(gene_info_v26)
+table(gene_info_v26$Chr)
+
+length(unique(gene_info_v26$ENSG))
+length(unique(gene_info_v26$GENE))
+
+colSums(is.na(gene_info_v26))
+
+# remove the version number from gene ensemblID
+gene_info_v26$ENSG_version = gene_info_v26$ENSG
+gene_info_v26$ENSG = gsub("\\..*", "", gene_info_v26$ENSG_version)
+
+dim(gene_info_v26)
+head(gene_info_v26)
+```
+
+# Extract genes considered by Bryois for each cell type
+
+```{r}
+Bryois_2022_genes <- read_excel(paste0(Bryois_2022_data_dir, Bryois_gene_file), 
+                                sheet = "Table S2", skip = 3)
+Bryois_2022_genes = as.data.frame(Bryois_2022_genes)
+
+dim(Bryois_2022_genes)
+head(Bryois_2022_genes)
+table(Bryois_2022_genes$cell_type)
+unique(Bryois_2022_genes$cell_type)
+
+summary(Bryois_2022_genes$adj_p)
+hist(Bryois_2022_genes$adj_p, main="")
+
+# only keep genes that exist in gene_info_v26.rds
+
+n_genes = n_genes_v26 = rep(NA, length(cell_types))
+
+gene_con_Bryois_v26_list = list()
+
+for (i in 1:length(cell_types)){
+  
+  ct = cell_types[i]
+    
+  ct_genes = 
+    Bryois_2022_genes[which(Bryois_2022_genes$cell_type == ct), ]
+  
+  ct_genes_v26 = 
+    ct_genes[which(ct_genes$ensembl %in% gene_info_v26$ENSG),]$ensembl
+    
+  ct_string = sub(" ", "_", str_squish(sub("/", "", ct)))
+  
+  n_genes[i]     = sum(!is.na(ct_genes$ensembl))
+  n_genes_v26[i] = length(ct_genes_v26)
+  gene_con_Bryois_v26_list[[ct_string]] = ct_genes_v26
+}
+
+df_n_genes = data.frame(cell_type = cell_types, n_genes=n_genes, 
+                        n_genes_v26=n_genes_v26)
+
+df_n_genes
+(df_n_genes$n_genes - df_n_genes$n_genes_v26)/df_n_genes$n_genes
+
+saveRDS(gene_con_Bryois_v26_list, 
+        file=paste0(Bryois_2022_data_dir, "Bryois_gene_considered.rds"))
+```
+
+# Filter eGenes
+
+## Load the file for SNP locations
+```{r}
+snp_pos <- fread(paste0(Bryois_2022_data_dir, Bryois_snp_pos_file))
+dim(snp_pos)
+head(snp_pos)
+length(unique(snp_pos$SNP))
+```
+
+## Filter out eGenes with eSNPs beyond 50kb of gene body
+```{r}
+Bryois_2022_eGenes = Bryois_2022_genes[which(Bryois_2022_genes$adj_p <= 0.05), ]
+dim(Bryois_2022_eGenes)
+table(Bryois_2022_eGenes$cell_type)
+
+n_eGenes_Bryois    = rep(NA, length(cell_types))
+n_eGenes_found_v26 = rep(NA, length(cell_types))
+
+all_snp_found_flags = rep(NA, length(cell_types))
+chr_match_flags     = rep(NA, length(cell_types))
+split_match_flags   = rep(NA, length(cell_types))
+
+kept_prop_v = rep(NA, length(cell_types))
+
+p_list = list()
+
+for (i in 1:length(cell_types)){
+  
+  ct_string = sub(" ", "_", str_squish(sub("/", "", cell_types[i])))
+
+  ct_eGenes = 
+    Bryois_2022_eGenes[which(Bryois_2022_eGenes$cell_type == cell_types[i]), ]
+  
+  stopifnot(is.unq(ct_eGenes))
+  n_eGenes_Bryois[i] = nrow(ct_eGenes)
+  
+  # only keep those that exist in gene_info_v26.rds
+  df_ct_eGenes = ct_eGenes[which(ct_eGenes$ensembl %in% gene_info_v26$ENSG), ]  
+  
+  n_eGenes_found_v26[i] = nrow(df_ct_eGenes)
+
+  # find the gene starting position and ending position from gene_info_v26
+  # record the chromosome
+  
+  df_ct_eGenes$gene_start = gene_info_v26[match(df_ct_eGenes$ensembl, 
+                                          gene_info_v26$ENSG), ]$Start
+  df_ct_eGenes$gene_end = gene_info_v26[match(df_ct_eGenes$ensembl, 
+                                        gene_info_v26$ENSG), ]$End
+  df_ct_eGenes$gene_chr = gene_info_v26[match(df_ct_eGenes$ensembl, 
+                                        gene_info_v26$ENSG), ]$Chr
+
+  # find SNP locations from snp_loc table
+  
+  stopifnot(all(df_ct_eGenes$SNP %in% snp_pos$SNP))
+
+  df_ct_eGenes$snp_loc_string = 
+    snp_pos[match(df_ct_eGenes$SNP, snp_pos$SNP), ]$SNP_id_hg38
+  
+  df_split_string = read.table(text = df_ct_eGenes$snp_loc_string, 
+                               sep = ":", as.is = TRUE)
+  
+  df_ct_eGenes$snp_chr = df_split_string$V1
+  df_ct_eGenes$snp_loc = df_split_string$V2
+  
+  stopifnot(all(df_ct_eGenes$gene_chr == df_ct_eGenes$snp_chr))
+  
+  snp_str = paste0(df_ct_eGenes$snp_chr, ":", df_ct_eGenes$snp_loc)
+  stopifnot(all(snp_str == df_ct_eGenes$snp_loc_string))
+
+  # prepare distance between SNP and gene body
+  
+  stopifnot(all(df_ct_eGenes$gene_start < df_ct_eGenes$gene_end))
+  
+  outside_vec = (df_ct_eGenes$snp_loc < df_ct_eGenes$gene_start) | 
+                (df_ct_eGenes$snp_loc > df_ct_eGenes$gene_end)
+  outside_vec = as.numeric(outside_vec)
+  
+  pre_dist = pmin(abs(df_ct_eGenes$snp_loc - df_ct_eGenes$gene_start), 
+                  abs(df_ct_eGenes$snp_loc - df_ct_eGenes$gene_end))
+  df_ct_eGenes$dist = outside_vec * pre_dist
+  
+  
+  p_list[[i]] = ggplot(df_ct_eGenes, aes(x=log10(dist+1))) +
+                geom_histogram(color="darkblue", fill="lightblue") + 
+                geom_vline(aes(xintercept = log10(50000+1)), colour="blue") + 
+                ggtitle(ct_string) + theme_classic()
+      
+  kept_prop_v[i] = mean(df_ct_eGenes$dist <= 50000)
+  
+  df_ct_eGenes_kept = df_ct_eGenes[which(df_ct_eGenes$dist <= 50000), ]
+  
+  write.csv(df_ct_eGenes_kept, 
+            file = paste0(Bryois_2022_data_dir,  
+                          Bryois_eGene_folder,
+                          "Bryois_eGenes_50kb_", 
+                          ct_string, ".csv"), 
+            row.names = FALSE)
+}
+
+ggarrange(plotlist=p_list, nrow = 3, ncol = 3)
+
+```
+
+# Properties
+```{r fig.width=5, fig.height=4}
+n_eGenes_Bryois
+n_eGenes_found_v26
+
+(n_eGenes_Bryois - n_eGenes_found_v26)/n_eGenes_Bryois
+
+kept_prop_v
+
+df_kept_prop = data.frame(n_eGenes_v26 = n_eGenes_found_v26, 
+                          kept_prop = kept_prop_v, 
+                          cell_type = cell_types)
+
+ggplot(data = df_kept_prop, aes(x=log10(n_eGenes_v26), y=kept_prop, 
+                                color=cell_type)) + 
+  geom_point() + xlab("log10(# of eGenes)") + 
+  ylab("prop of eGenes with eSNP within 50kb") + 
+  theme(legend.position="none") + 
+  geom_text_repel(data = df_kept_prop, aes(label = cell_type))
+
+write.csv(df_kept_prop, 
+          file = "./results/step1_eGenes_v26_kept_prop.csv", 
+          row.names = FALSE)
+```
+
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

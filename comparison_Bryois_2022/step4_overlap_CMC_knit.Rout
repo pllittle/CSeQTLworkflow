@@ -1,0 +1,651 @@
+
+R version 4.1.2 (2021-11-01) -- "Bird Hippie"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> Sys.setenv(RSTUDIO_PANDOC="/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools")
+> 
+> render_report = function(cs_q_cutoff, fold_cutoff, AF) {
++   config = sprintf("%s_cs_q_%.0e_fold_%.1f", 
++                    AF, cs_q_cutoff, fold_cutoff)
++   config
++   rmarkdown::render(
++     "step4_overlap_CMC.Rmd", params = list(
++       cs_q_cutoff = cs_q_cutoff, 
++       fold_cutoff = fold_cutoff, 
++       AF = AF
++     ),
++     output_file = sprintf("step4_overlap_CMC_%s.html", config)
++   )
++ }
+> 
+> render_report(cs_q_cutoff=5e-3, fold_cutoff=1, AF="SCZ")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:data.table':
+
+    between, first, last
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: 'reshape2'
+
+The following objects are masked from 'package:data.table':
+
+    dcast, melt
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_SCZ_cs_q_5e-03_fold_1.0.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7fef93808.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_SCZ_cs_q_5e-03_fold_1.0.html
+> render_report(cs_q_cutoff=5e-3, fold_cutoff=1.5, AF="SCZ")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_SCZ_cs_q_5e-03_fold_1.5.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7f39930a23.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_SCZ_cs_q_5e-03_fold_1.5.html
+> render_report(cs_q_cutoff=1e-3, fold_cutoff=1.5, AF="SCZ")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_SCZ_cs_q_1e-03_fold_1.5.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7f442a7e0e.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_SCZ_cs_q_1e-03_fold_1.5.html
+> 
+> render_report(cs_q_cutoff=5e-3, fold_cutoff=1, AF="Control")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_Control_cs_q_5e-03_fold_1.0.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7f4f08fe8a.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_Control_cs_q_5e-03_fold_1.0.html
+> render_report(cs_q_cutoff=5e-3, fold_cutoff=1.5, AF="Control")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_Control_cs_q_5e-03_fold_1.5.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7f2fc2851e.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_Control_cs_q_5e-03_fold_1.5.html
+> render_report(cs_q_cutoff=1e-3, fold_cutoff=1.5, AF="Control")
+
+
+processing file: step4_overlap_CMC.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   4%
+   inline R code fragments
+
+  |                                                                              |.....                                                                 |   7%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |........                                                              |  11%
+  ordinary text without R code
+
+  |                                                                              |..........                                                            |  14%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |............                                                          |  18%
+  ordinary text without R code
+
+  |                                                                              |...............                                                       |  21%
+label: unnamed-chunk-1
+  |                                                                              |..................                                                    |  25%
+  ordinary text without R code
+
+  |                                                                              |....................                                                  |  29%
+label: unnamed-chunk-2
+  |                                                                              |......................                                                |  32%
+  ordinary text without R code
+
+  |                                                                              |.........................                                             |  36%
+label: unnamed-chunk-3
+  |                                                                              |............................                                          |  39%
+  ordinary text without R code
+
+  |                                                                              |..............................                                        |  43%
+label: unnamed-chunk-4
+  |                                                                              |................................                                      |  46%
+  ordinary text without R code
+
+  |                                                                              |...................................                                   |  50%
+label: unnamed-chunk-5
+  |                                                                              |......................................                                |  54%
+  ordinary text without R code
+
+  |                                                                              |........................................                              |  57%
+label: unnamed-chunk-6
+  |                                                                              |..........................................                            |  61%
+  ordinary text without R code
+
+  |                                                                              |.............................................                         |  64%
+label: unnamed-chunk-7
+  |                                                                              |................................................                      |  68%
+  ordinary text without R code
+
+  |                                                                              |..................................................                    |  71%
+label: unnamed-chunk-8
+  |                                                                              |....................................................                  |  75%
+  ordinary text without R code
+
+  |                                                                              |.......................................................               |  79%
+label: unnamed-chunk-9
+  |                                                                              |..........................................................            |  82%
+  ordinary text without R code
+
+  |                                                                              |............................................................          |  86%
+label: unnamed-chunk-10 (with options) 
+List of 2
+ $ fig.width : num 4.8
+ $ fig.height: num 3.6
+
+  |                                                                              |..............................................................        |  89%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-11
+  |                                                                              |....................................................................  |  96%
+  ordinary text without R code
+
+  |                                                                              |......................................................................| 100%
+label: unnamed-chunk-12
+
+output file: step4_overlap_CMC.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step4_overlap_CMC.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step4_overlap_CMC_Control_cs_q_1e-03_fold_1.5.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//RtmpTUEPFb/rmarkdown-str17b7f3fb23b10.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step4_overlap_CMC_Control_cs_q_1e-03_fold_1.5.html
+> 
+> sessionInfo()
+R version 4.1.2 (2021-11-01)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] reshape2_1.4.4    dplyr_1.0.7       ggpubr_0.4.0      ggplot2_3.4.0    
+[5] stringr_1.4.0     readxl_1.3.1      data.table_1.14.2
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.1.1 xfun_0.28        bslib_0.3.1      purrr_0.3.4     
+ [5] carData_3.0-4    colorspace_2.0-2 vctrs_0.5.1      generics_0.1.1  
+ [9] htmltools_0.5.2  yaml_2.2.1       utf8_1.2.2       rlang_1.0.6     
+[13] jquerylib_0.1.4  pillar_1.6.4     glue_1.6.2       withr_2.5.0     
+[17] DBI_1.1.1        plyr_1.8.6       lifecycle_1.0.3  munsell_0.5.0   
+[21] ggsignif_0.6.3   gtable_0.3.0     cellranger_1.1.0 evaluate_0.14   
+[25] labeling_0.4.2   knitr_1.36       fastmap_1.1.0    fansi_0.5.0     
+[29] highr_0.9        broom_0.7.10     Rcpp_1.0.7       scales_1.2.1    
+[33] backports_1.4.0  jsonlite_1.7.2   abind_1.4-5      farver_2.1.0    
+[37] digest_0.6.29    stringi_1.7.6    rstatix_0.7.0    cowplot_1.1.1   
+[41] grid_4.1.2       cli_3.4.1        tools_4.1.2      magrittr_2.0.1  
+[45] sass_0.4.0       tibble_3.1.6     crayon_1.4.2     tidyr_1.1.4     
+[49] car_3.0-12       pkgconfig_2.0.3  ellipsis_0.3.2   assertthat_0.2.1
+[53] rmarkdown_2.11   R6_2.5.1         compiler_4.1.2  
+> 
+> q(save = "no")
+> proc.time()
+   user  system elapsed 
+ 78.689   6.532  92.225 

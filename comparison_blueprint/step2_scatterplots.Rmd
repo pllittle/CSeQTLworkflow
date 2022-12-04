@@ -1,0 +1,190 @@
+
+---
+title: "Scatter plots of -log10(pvalue) for comparison"
+author: "Si Liu and Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+
+# Setup
+
+## Load R libraries
+```{r}
+library(data.table)
+library(readxl)
+library(stringr)
+library(dplyr)
+library(reshape2)
+
+library(ggplot2)
+library(ggpubr)
+theme_set(theme_classic())
+
+Other_method = "BLUEPRINT"
+pcut = 1e-20
+
+dim1 <- function(x){if(is.vector(x)) length(x) else dim(x)}
+
+```
+
+## Data directory and file names
+```{r}
+res_all  = "../../CSeQTL/data2share/GTExBlood_eqtls.rds"
+res_bp   = "../../CSeQTL/data2share/BLUEPRINT_eqtls.rds"
+```
+
+
+# Check data
+
+## Results from CSeQTL
+
+```{r}
+rall = readRDS(res_all)
+names(rall)
+lapply(rall, dim1)
+
+cs_result = rall$eqtl[rall$eqtl$trim==TRUE & rall$eqtl$perm==FALSE & 
+                       rall$eqtl$MODEL=="cseqtl" &
+                       (!is.na(rall$eqtl$PVAL)), ]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+cs_result = cs_result[-which(cs_result$CELLTYPE %in% 
+                               c("Bulk", "OTHER")),]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+```
+
+## Results from Blueprint
+
+```{r}
+bp = readRDS(res_bp)
+names(bp)
+lapply(bp, dim1)
+
+
+bp_result = bp$eqtl[bp$eqtl$trim==TRUE & bp$eqtl$perm==FALSE & 
+                     bp$eqtl$MODEL=="cseqtl", ]
+dim(bp_result)
+bp_result[1:2,]
+table(bp_result$CT2)
+stopifnot(!any(is.na(bp_result$PVAL)))
+```
+
+# Generate scatter plots
+
+Loop through each pair of cell types to generate scatter plots.
+
+```{r}
+# ot_cell_types are the cell types considered by the other study
+cs_cell_types = c("B", "CD4T", "CD8T", "Monocyte", "NK", "Neutrophil")
+ot_cell_types = c("CD4T", "Monocyte", "Neutrophil")
+
+ot_result = bp_result
+
+
+pdf(width = 12, height = 6, "figures/step2_pvalue_scatterplots.pdf")
+
+for (i in 1:length(ot_cell_types)){
+  
+  ot_ct = ot_cell_types[i]
+  ot_ct_result = ot_result[ot_result$CT2 == ot_ct,]
+  
+  # list of plots
+  p_ct_list = list()
+  
+  for (j in 1:length(cs_cell_types)){
+    
+    cs_ct = cs_cell_types[j]
+    cs_ct_result = cs_result[cs_result$CELLTYPE == cs_ct,]
+
+    gene_set_ij = intersect(ot_ct_result$ENSG, 
+                            cs_ct_result$ENSG)
+    
+    ot_ij = ot_ct_result[match(gene_set_ij, ot_ct_result$ENSG),]
+    cs_ij = cs_ct_result[match(gene_set_ij, cs_ct_result$ENSG),]
+    
+    cols2merge = c("ENSG", "GENE", "permutation_PVAL", "ETA")
+    df_plot = merge(ot_ij[,cols2merge], cs_ij[,cols2merge], 
+                    by = "ENSG", suffixes = c("_ot", "_cs"))
+    stopifnot(all(df_plot$GENE_ot == df_plot$GENE_cs))
+    
+    df_plot$permutation_PVAL_ot[which(df_plot$permutation_PVAL_ot < pcut)] = pcut
+    df_plot$permutation_PVAL_cs[which(df_plot$permutation_PVAL_cs < pcut)] = pcut
+
+    cur_corr = cor(-log10(df_plot$permutation_PVAL_ot), 
+                   -log10(df_plot$permutation_PVAL_cs), method = "spearman")
+    
+    p_ct_list[[2*j-1]] = 
+      ggplot(df_plot, aes(x = -log10(permutation_PVAL_cs), 
+                          y = -log10(permutation_PVAL_ot))) + 
+      geom_point(size = 1, alpha = 0.5) + 
+      geom_abline(intercept = 0, slope = 1) + 
+      xlab("-log10(CSeQTL)") + 
+      ylab(sprintf("-log10(%s)", Other_method)) + 
+      ggtitle(paste0(Other_method, ": ", ot_ct, 
+                     "\nCSeQTL: ", cs_ct, 
+                     "\nSpearman corr: ", signif(cur_corr, 2)))
+    
+    # filter by fold change
+    table(abs(log10(df_plot$ETA_ot)) > log10(1.5),
+          abs(log10(df_plot$ETA_cs)) > log10(1.5)) 
+    
+    ww1 = abs(log10(df_plot$ETA_ot)) > log10(1.5) & 
+      df_plot$permutation_PVAL_ot < 1e-3
+      
+    ww2 = abs(log10(df_plot$ETA_cs)) > log10(1.5) & 
+      df_plot$permutation_PVAL_cs < 1e-3
+    
+    table(ww1, ww2)
+
+    df_plot = df_plot[ww1 | ww2,]
+    cur_corr = cor(-log10(df_plot$permutation_PVAL_ot), 
+                   -log10(df_plot$permutation_PVAL_cs), method = "spearman")
+    
+    p_ct_list[[2*j]] = 
+      ggplot(df_plot, aes(x = -log10(permutation_PVAL_cs), 
+                          y = -log10(permutation_PVAL_ot))) + 
+      geom_point(size = 1, alpha = 0.5) + 
+      geom_abline(intercept = 0, slope = 1) + 
+      xlab("-log10(CSeQTL)") + 
+      ylab(sprintf("-log10(%s)", Other_method)) + 
+      ggtitle(paste0(Other_method, ": ", ot_ct, 
+                     "\nCSeQTL: ", cs_ct, 
+                     "\nSpearman corr: ", signif(cur_corr, 2)))
+
+  }
+  
+  print(ggarrange(plotlist=p_ct_list, nrow = 2, ncol = 4))
+  
+}
+
+dev.off()
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

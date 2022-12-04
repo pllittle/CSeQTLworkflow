@@ -1,0 +1,99 @@
+
+---
+title: "Summarize comparison with Yazar_2022 findings"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+# Setup
+
+
+## Load R libraries
+
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+library(tidyr)
+theme_set(theme_classic())
+
+theme1 = theme(axis.text.x = element_text(angle = 60, vjust = 1, 
+                                   size = 11, hjust = 1),
+               axis.text.y = element_text(size = 11))
+
+```
+
+
+# Summerize results
+
+## Configurations
+```{r}
+configs = data.frame(cs_q_cutoff = c(5e-3, 5e-3, 1e-3),
+                     fold_cutoff = c(1, 1.5, 1.5))
+configs
+```
+
+## Overlap among CSeQTL
+```{r fig.width=4, fig.height=3}
+
+overlaps = NULL
+
+for(i in 1:nrow(configs)){
+  
+  config_str = sprintf("cs_q_%.0e_fold_%.1f", 
+                   configs[i,1], configs[i,2])
+  fi = sprintf("results/step3b_%s_prop_overlap_among_CSeQTL.csv", 
+               config_str)
+  
+  di = fread(fi, data.table = FALSE)
+  rownames(di) = di$V1
+  di = data.matrix(di[,-1])
+  
+  overlaps = rbind(overlaps, diag(di))
+}
+
+overlaps = as.data.frame(overlaps)
+overlaps$config = 1:3
+overlaps_df = pivot_longer(overlaps, !config, 
+                           names_to = "cell_type", 
+                           values_to = "prop_overlap", )
+overlaps_df[1:2,]
+overlaps_df$cell_type = as.factor(overlaps_df$cell_type)
+overlaps_df$config    = as.factor(overlaps_df$config)
+
+g1 = ggplot(data=overlaps_df, aes(x=cell_type, y=prop_overlap, 
+                                      fill=config)) + 
+  geom_bar(stat="identity", color="black", position=position_dodge())
+
+g1 + scale_fill_brewer(palette="Blues") + theme1
+
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

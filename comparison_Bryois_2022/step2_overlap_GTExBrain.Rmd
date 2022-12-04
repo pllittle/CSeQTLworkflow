@@ -1,0 +1,525 @@
+---
+title: "Overlap between Bryois 2022 and CSeQTL GTExBrain by Cell Type"
+author: "Si Liu and Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+params:
+  cs_q_cutoff: 5e-3
+  fold_cutoff: 1.5
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+Check the overlap between the eGenes from Bryois et al. (2022) and eGenes identified by CSeQTL from GTEx brain bulk RNA-seq data.
+
+# Setup
+
+## Load R libraries
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+
+Other_method = "Bryois_2022"
+
+get_pi0 <- function(pval){
+  mean(pval==1, na.rm = TRUE) + 
+  2*sum((pval > 0.5) & (pval < 1), na.rm = TRUE) / sum(!is.na(pval))
+}
+
+is.unq <- function(x) length(x)==length(unique(x))
+
+# params = list(cs_q_cutoff=5e-3, fold_cutoff=1)
+cs_q_cutoff = params$cs_q_cutoff
+fold_cutoff = params$fold_cutoff
+
+cat("cs_q_cutoff: ",  cs_q_cutoff,  "\n")
+cat("fold_cutoff: ",  fold_cutoff,  "\n")
+
+config = sprintf("cs_q_%.0e_fold_%.1f", 
+                 cs_q_cutoff, fold_cutoff)
+config
+```
+
+## Data directory and file names
+```{r}
+CSeQTL_dir = "../../CSeQTL/data2share/"
+GTExBrain_eqtl_file = "GTExBrain_eqtls.rds"
+
+Bryois_2022_data_dir = "../../CSeQTL/Bryois_2022/"
+
+Bryois_eGene_folder  = "Bryois_eGenes_50kb/"
+Bryois_con_gene_file = "Bryois_gene_considered.rds"
+```
+
+## Cell type names
+
+```{r}
+Bryois_cell_types = c("Astrocytes", "Excitatory neurons", 
+                      "Inhibitory neurons",  "Microglia", 
+                      "Oligodendrocytes", "OPCs / COPs", 
+                      "Pericytes", "Endothelial cells")
+
+GTExBrain_cell_types = c("Astro", "Exc", "Inh", "Micro", "Oligo", "OPC")
+```
+
+## Identify eGenes from Bryois 2022
+
+```{r}
+eGenes_Bryois_list = list()
+n_eGenes = list()
+
+for (i in 1:length(Bryois_cell_types)){
+  
+  Bryois_ct = Bryois_cell_types[i]
+  Bryois_ct_string = sub(" ", "_", str_squish(sub("/", "", Bryois_ct)))
+  
+  Bryois_ct_eGenes_path = paste0(Bryois_2022_data_dir, 
+                                 Bryois_eGene_folder, 
+                                 "Bryois_eGenes_50kb_", 
+                                 Bryois_ct_string, ".csv")
+  
+  df_Bryois_ct  = read.csv(Bryois_ct_eGenes_path, header = TRUE)
+  
+  cat(i, Bryois_ct, nrow(df_Bryois_ct), "\n")
+  print(summary(abs(df_Bryois_ct$beta)))
+  
+  table(df_Bryois_ct$adj_p == 0)
+  ggplot(df_Bryois_ct, aes(x=beta, y=-log10(adj_p))) + 
+    geom_point(size = 1, alpha = 0.5) +  
+    geom_vline(xintercept=0.3, col="red") + 
+    geom_vline(xintercept=-0.3, col="red")
+  
+  w2kp = which(abs(df_Bryois_ct$beta) > 0.3)
+  df_Bryois_ct = df_Bryois_ct[w2kp,]
+  cat(i, Bryois_ct, "after beta filtering:", 
+      nrow(df_Bryois_ct), "\n\n")
+
+  df_Bryois_ct = df_Bryois_ct[order(df_Bryois_ct$adj_p),]
+  n_eGenes[[Bryois_ct_string]] = nrow(df_Bryois_ct)
+
+  if(nrow(df_Bryois_ct) > 500){
+    df_Bryois_ct = df_Bryois_ct[1:500,]
+  }
+  
+  eGenes_Bryois_list[[Bryois_ct_string]] = df_Bryois_ct$ensembl
+  
+}
+
+sapply(eGenes_Bryois_list, length)
+sapply(eGenes_Bryois_list, function(v){length(unique(v))})
+
+```
+
+
+## Cell type selection
+
+"Pericytes" and "Endothelial" have fewer eGenes, so we skip it. 
+
+```{r}
+
+Bryois_cell_types = c("Astrocytes", "Excitatory neurons", 
+                      "Inhibitory neurons",  "Microglia", 
+                      "Oligodendrocytes", "OPCs / COPs")
+
+GTExBrain_cell_types = c("Astro", "Exc", "Inh", "Micro", "Oligo", "OPC")
+```
+
+# Get overlap
+
+
+## Step 1: load the genes considered under each cell type by Bryois_2022
+
+```{r}
+gene_con_Bryois_list = readRDS(paste0(Bryois_2022_data_dir, 
+                                      Bryois_con_gene_file))
+
+sapply(gene_con_Bryois_list, length)
+```
+
+## Step 2: load the genes considered for each cell type by CSeQTL, and extract the eGenes.
+
+```{r}
+GTExBrain <- readRDS(paste0(CSeQTL_dir, GTExBrain_eqtl_file))
+length(GTExBrain)
+names(GTExBrain)
+
+lapply(GTExBrain, dim)
+
+GTExBrain = GTExBrain[["eqtl"]]
+dim(GTExBrain)
+GTExBrain[1:2,]
+round(colSums(!is.na(GTExBrain))/nrow(GTExBrain),2)
+
+length(unique(GTExBrain$ENSG))
+length(unique(GTExBrain$GENE))
+length(unique(GTExBrain$SNP))
+
+table(GTExBrain$CELLTYPE, useNA = "ifany")
+
+GTExBrain$ENSG_version = GTExBrain$ENSG
+GTExBrain$ENSG = gsub("\\..*","", GTExBrain$ENSG_version)
+
+GTExBrain = GTExBrain[which((GTExBrain$trim==TRUE) & 
+                              (GTExBrain$perm==FALSE) & 
+                              (GTExBrain$MODEL=="cseqtl") & 
+                              (!is.na(GTExBrain$PVAL))), ]
+
+ww2 = abs(log10(GTExBrain$ETA)) >= log10(fold_cutoff)
+ww2 = ww2 & GTExBrain$qvalue < cs_q_cutoff
+
+table(ww2,GTExBrain$CELLTYPE)
+
+GTExBrain$eQTL = rep("NO", nrow(GTExBrain))
+GTExBrain$eQTL[ww2] = "YES"
+
+n_con_CSeQTL_list    = list()
+gene_con_CSeQTL_list = list()
+
+n_eGenes_CSeQTL_list = list()
+eGenes_CSeQTL_list   = list()
+
+for (j in 1:length(GTExBrain_cell_types)){
+  
+  cct = GTExBrain_cell_types[j]
+  cct_GTExBrain = GTExBrain[which(GTExBrain$CELLTYPE == cct), ]
+    
+  cct_considered_CSeQTL = unique(cct_GTExBrain$ENSG)
+  
+  n_con_CSeQTL_list[[cct]] = length(cct_considered_CSeQTL)
+  gene_con_CSeQTL_list[[cct]] = cct_considered_CSeQTL
+  
+  cct_GTExBrain_eGenes = 
+    unique(cct_GTExBrain$ENSG[which(cct_GTExBrain$eQTL=="YES")])
+  
+  n_eGenes_CSeQTL_list[[cct]] = length(cct_GTExBrain_eGenes)
+  eGenes_CSeQTL_list[[cct]] = cct_GTExBrain_eGenes
+
+}
+
+unlist(n_con_CSeQTL_list)
+unlist(n_eGenes_CSeQTL_list)
+```
+
+## Further filter eQTLs
+
+To avoid unbalanced number of eQTLs across cell types, keep top 300 eGenes if there are more than 300 eGenes 
+
+```{r}
+
+for (j in 1:length(GTExBrain_cell_types)){
+  cct = GTExBrain_cell_types[j]
+  cct_GTExBrain = GTExBrain[which(GTExBrain$CELLTYPE == cct), ]
+  
+  if(n_eGenes_CSeQTL_list[[cct]] > 300){
+    cct_GTExBrain = cct_GTExBrain[order(cct_GTExBrain$qvalue),]
+    eGenes_CSeQTL_list[[cct]] = cct_GTExBrain$ENSG[1:300]
+  }
+}
+
+sapply(eGenes_CSeQTL_list, length)
+
+for (j in 1:length(GTExBrain_cell_types)){
+  cct = GTExBrain_cell_types[j]
+  int_j = intersect(eGenes_CSeQTL_list[[cct]], eGenes_CSeQTL_list[["Exc"]])
+  cat(cct, length(int_j), "\n")
+}
+
+
+```
+
+
+
+## Step 3: get the union of all eGenes from CSeQTL
+```{r}
+union_CSeQTL_eGenes = unique(c(eGenes_CSeQTL_list[["Astro"]], 
+                               eGenes_CSeQTL_list[["Exc"]], 
+                               eGenes_CSeQTL_list[["Inh"]], 
+                               eGenes_CSeQTL_list[["Micro"]],
+                               eGenes_CSeQTL_list[["Oligo"]], 
+                               eGenes_CSeQTL_list[["OPC"]]))
+length(union_CSeQTL_eGenes)
+```
+
+## Step 4: check overlap
+
+Loop through each pair between the Bryois 2022 cell types and the CSeQTL cell types. 
+
+```{r}
+# "cs" stands for CSeQTL and "ot" stands for other study
+# in this case, th other study is  Bryois 2022. 
+
+mat_cs_vs_ot= matrix(NA, nrow=length(GTExBrain_cell_types), 
+                      ncol=length(Bryois_cell_types))
+
+rownames(mat_cs_vs_ot) = GTExBrain_cell_types
+colnames(mat_cs_vs_ot) = Bryois_cell_types
+
+prop_mat_ot      = mat_cs_vs_ot
+prop_mat_cs      = mat_cs_vs_ot
+prop_mat_union   = mat_cs_vs_ot
+ratio_obs_vs_exp = mat_cs_vs_ot
+relative_ratios  = mat_cs_vs_ot
+fisher_mat       = mat_cs_vs_ot
+pi1_hat_mat_ot   = mat_cs_vs_ot
+
+eGenes_overlap_list = list()
+
+pdf(width = 12, height = 6, 
+    "figures/step2_Bryois_eGenes_CSeQTL_GTExBrain_pval_hist.pdf")
+
+for (i in 1:length(Bryois_cell_types)){
+  
+  Bryois_ct = Bryois_cell_types[i]
+  Bryois_ct_string = sub(" ", "_", str_squish(sub("/", "", Bryois_ct)))
+  
+  Bryois_ct_eGenes     = eGenes_Bryois_list[[Bryois_ct_string]]
+  Bryois_ct_considered = gene_con_Bryois_list[[Bryois_ct_string]]
+  
+  # filter CSeQTL eGenes to keep those considered by Bryois et al.
+  union_CSeQTL_eGenes_i = intersect(union_CSeQTL_eGenes, 
+                                    Bryois_ct_considered)
+  
+  stopifnot(is.unq(union_CSeQTL_eGenes_i))
+
+  base_union_ratio = intersect(Bryois_ct_eGenes, 
+                               union_CSeQTL_eGenes_i)
+  base_union_ratio = length(base_union_ratio)/length(union_CSeQTL_eGenes_i)
+
+  print(paste0("Bryois cell type: ", Bryois_ct_string))
+  print(paste0("# of Bryois eGenes: ", length(Bryois_ct_eGenes)))
+  print(paste0("length of union_CSeQTL_eGenes: ", 
+               length(union_CSeQTL_eGenes_i)))
+      
+  p_ct_list = list()
+  
+  for (j in 1:length(GTExBrain_cell_types)){
+    
+    CSeQTL_ct = GTExBrain_cell_types[j]
+    CSeQTL_ct_eGenes = eGenes_CSeQTL_list[[CSeQTL_ct]]
+    
+    # get the overlap of genes considered by two studies
+    CSeQTL_ct_considered = gene_con_CSeQTL_list[[CSeQTL_ct]]
+    
+    overlap_considered = intersect(Bryois_ct_considered, 
+                                   CSeQTL_ct_considered)
+    
+    # Filter the eGenes to keep those in 'overlap_considered'
+    Bryois_ct_eGenes_kept = intersect(Bryois_ct_eGenes, 
+                                      overlap_considered)
+    
+    CSeQTL_ct_eGenes_kept = intersect(CSeQTL_ct_eGenes, 
+                                      overlap_considered)
+    
+    if(j == i){
+      eGenes_overlap_list[[CSeQTL_ct]] = list(Bryois=Bryois_ct_eGenes_kept, 
+                                         CSeQTL=CSeQTL_ct_eGenes_kept)
+    }
+    
+    # eGenes overlap
+    eGenes_overlap = intersect(Bryois_ct_eGenes_kept, 
+                               CSeQTL_ct_eGenes_kept)
+    n_overlap = length(eGenes_overlap)
+    
+    prop_mat_ot[j,i] = n_overlap/length(Bryois_ct_eGenes_kept)
+    prop_mat_cs[j,i] = n_overlap/length(CSeQTL_ct_eGenes_kept)
+    
+    union_eGenes = union(Bryois_ct_eGenes_kept, 
+                         CSeQTL_ct_eGenes_kept)
+    prop_mat_union[j,i] = n_overlap/length(union_eGenes)
+
+    pp = n_overlap
+    pn = length(setdiff(Bryois_ct_eGenes_kept, eGenes_overlap))
+    np = length(setdiff(CSeQTL_ct_eGenes_kept, eGenes_overlap))
+    nn = length(setdiff(overlap_considered, union_eGenes))
+
+    stopifnot(pp+pn+np+nn == length(overlap_considered))
+    
+    # ratio between observed and expected
+    ratio_obs_vs_exp[j,i] = (pp*(pp+pn+np+nn))/((pp+pn)*(pp+np))
+    
+    # relative ratio, compare true discovery rate across cell types.
+    TDR_cs_ij = pp/(pp + np)
+    relative_ratios[j,i] = TDR_cs_ij/base_union_ratio
+
+    # Fisher's exact test
+    mat_test = matrix(c(pp, np, pn, nn), nrow = 2)
+    rownames(mat_test) = c("Bryois eGenes", "Bryois Non-eGenes")
+    colnames(mat_test) = c("CSeQTL eGenes", "CSeQTL Non-eGenes")
+
+    cat("Other:", Bryois_ct, "CSeQTL:", CSeQTL_ct, "\n")
+    print(mat_test)
+    cat("\n")
+    
+    fisher_mat[j,i] = fisher.test(mat_test, 
+                                  alternative = "greater")$p.value
+    
+    # get CSeQTL p-values for the eGenes by the other method
+    GTExBrain_ct = GTExBrain[which(GTExBrain$CELLTYPE == CSeQTL_ct), ]
+
+    ot_eGenes_CSeQTL_pvalues = 
+      GTExBrain_ct$permutation_PVAL[match(Bryois_ct_eGenes_kept, 
+                         GTExBrain_ct$ENSG)]
+    
+    pi0_hat = get_pi0(ot_eGenes_CSeQTL_pvalues)
+    pi0_hat = min(1, pi0_hat)
+    pi1_hat_mat_ot[j,i] = 1 - pi0_hat
+
+    df_ct_plot_pvalues = data.frame(pvalue = ot_eGenes_CSeQTL_pvalues)
+    
+    p_ct_list[[j]] = ggplot(df_ct_plot_pvalues, aes(x=pvalue)) +
+      geom_histogram(color="darkblue", fill="lightblue",
+                     breaks=seq(0,1,by=0.02)) + 
+                     ggtitle(paste0(Other_method, ": ", Bryois_ct, 
+                                    "\nCSeQTL: ", CSeQTL_ct, 
+                                    "\npi_0: ", signif(pi0_hat, 2)))
+  }
+  
+  print(ggarrange(plotlist=p_ct_list, nrow = 2, ncol = 4))
+  
+}
+
+dev.off()
+
+sapply(eGenes_overlap_list, function(x){sapply(x, length)})
+```
+
+## Plots
+```{r fig.width=4.8, fig.height=3.6}
+theme1 = theme(axis.text.x = element_text(angle = 60, vjust = 1, 
+                                   size = 11, hjust = 1),
+               axis.text.y = element_text(size = 11))
+
+# among eGenes of other method, what proportion was recovered by CSeQTL
+melted_prop_mat_ot = reshape2::melt(prop_mat_ot,
+                          varnames=c("CSeQTL", Other_method))
+names(melted_prop_mat_ot)[1:2] = c("CSeQTL", Other_method)
+
+round(prop_mat_ot,2)
+
+ggplot(data = melted_prop_mat_ot, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") + 
+  ggtitle(paste("Prop. overlap among", 
+                Other_method, "eGenes")) + theme1
+
+melted_prop_mat_cs = reshape2::melt(prop_mat_cs,
+                          varnames=c("CSeQTL", Other_method))
+
+round(prop_mat_cs, 2)
+ggplot(data = melted_prop_mat_cs, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") +  
+  ggtitle("Prop. overlap among CSeQTL eGenes") + theme1
+
+melted_prop_mat_union = reshape2::melt(prop_mat_union, 
+                              varnames=c("CSeQTL", Other_method))
+
+round(prop_mat_union, 2)
+ggplot(data = melted_prop_mat_union, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red")+ 
+  ggtitle("Prop. overlap among union of eGenes") + theme1
+
+
+melted_ratio = reshape2::melt(ratio_obs_vs_exp,
+                    varnames=c("CSeQTL", Other_method))
+
+round(ratio_obs_vs_exp, 2)
+ggplot(data = melted_ratio, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 1) + 
+  ggtitle("ratio of observed/expected overlap") + theme1
+
+melted_relative_ratios = reshape2::melt(relative_ratios,
+                            varnames=c("CSeQTL", Other_method))
+
+round(relative_ratios, 2)
+ggplot(data = melted_relative_ratios[!is.na(melted_relative_ratios$value),], 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 1) + 
+  ggtitle("relative ratio") + theme1
+
+fisher_mat_cut = fisher_mat
+fisher_mat_cut[fisher_mat < (10^(-10))] = 10^(-10)
+
+melted_fisher_mat = reshape2::melt(-log10(fisher_mat_cut),
+                      varnames=c("CSeQTL", Other_method))
+
+round(-log10(fisher_mat_cut), 2)
+ggplot(data = melted_fisher_mat, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = -log10(0.05), name="-log10(pvalue)") + 
+  ggtitle("-log10(pvalue) for overlap") + theme1
+
+melted_pi1 = reshape2::melt(pi1_hat_mat_ot, 
+                varnames=c("CSeQTL", Other_method))
+
+round(pi1_hat_mat_ot,3)
+ggplot(data = melted_pi1, 
+       aes_string(x="CSeQTL", y=Other_method, fill="value")) + 
+  geom_tile() + theme_classic() + 
+  scale_fill_gradient(low = "white", high = "red") +  
+  ggtitle(paste("pi1 of", Other_method, "eGenes")) + 
+  theme1
+```
+
+
+## Write out results
+
+```{r}
+write.csv(as.data.frame(prop_mat_cs), row.names = TRUE, 
+          file = sprintf("results/step2_%s_prop_overlap_among_CSeQTL.csv",
+                         config))
+
+write.csv(as.data.frame(ratio_obs_vs_exp), row.names = TRUE, 
+          file = sprintf("results/step2_%s_ratio_obs_vs_exp.csv",
+                         config))
+
+write.csv(as.data.frame(relative_ratios), row.names = TRUE, 
+          file = sprintf("results/step2_%s_relative_ratios.csv",
+                         config))  
+
+write.csv(as.data.frame(fisher_mat), row.names = TRUE, 
+          file = sprintf("results/step2_%s_overlap_fisher_pvalue.csv",
+                         config))
+
+saveRDS(eGenes_overlap_list, 
+        file=sprintf("results/step2_%s_eGenes.rds", config))
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+
