@@ -1,0 +1,192 @@
+---
+title: "Check whethre eQTL effects have the same directions"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+Check the difference between the eGenes from Yazar et al. (2022) and eGenes identified by CSeQTL from GTEx whole blood RNA-seq data.
+
+# Setup
+
+## Load R libraries
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+```
+
+# Check effect directions
+
+## Read in overlap and summarize results
+
+```{r, fig.width=5, fig.height=4}
+overlap = fread("results/step7_overlap.tsv")
+dim(overlap)
+overlap[1:2,]
+
+g1 = ggplot(overlap, aes(x=SPEARMANS_RHO, y=spearman, color=CELL_TYPE)) + 
+         geom_point() + 
+  geom_hline(yintercept=0, linetype="dashed") + 
+  geom_vline(xintercept=0, linetype="dashed") + 
+  geom_abline(intercept = 0, slope = 1)
+g1
+
+table(abs(overlap$SPEARMANS_RHO - overlap$spearman) < 0.01)
+table(abs(overlap$SPEARMANS_RHO - overlap$spearman) < 0.1)
+
+w2check = which(abs(overlap$SPEARMANS_RHO - overlap$spearman) > 0.1)
+overlap[w2check[1:2],]
+
+g1 = ggplot(overlap, aes(x=spearman, y=lm_beta, color=CELL_TYPE)) + 
+         geom_point() + 
+  geom_hline(yintercept=0, linetype="dashed") + 
+  geom_vline(xintercept=0, linetype="dashed")
+g1
+
+ggplot(overlap, aes(x=-log10(P_VALUE), y=-log10(spearman_pval), 
+                    color=CELL_TYPE)) + 
+         geom_point() + 
+  geom_hline(yintercept=0, linetype="dashed") + 
+  geom_vline(xintercept=0, linetype="dashed")
+
+ggplot(overlap, aes(x=-log10(spearman_pval), y=-log10(lm_pval), 
+                    color=CELL_TYPE)) + 
+         geom_point() + 
+  geom_hline(yintercept=0, linetype="dashed") + 
+  geom_vline(xintercept=0, linetype="dashed")
+
+
+table(overlap$spearman > 0, overlap$lm_beta > 0)
+table(overlap$spearman > 0, overlap$ETA > 1)
+
+t1 = table(overlap$lm_beta > 0, overlap$ETA > 1)
+t1
+chisq.test(overlap$lm_beta > 0, overlap$ETA > 1)
+sum(diag(t1)/nrow(overlap))
+
+w2kp = which(overlap$qvalue < 0.2 & overlap$P_VALUE < 0.05)
+length(w2kp)
+table(overlap$spearman[w2kp] > 0, overlap$ETA[w2kp] > 1)
+t1 = table(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+t1
+sum(diag(t1)/length(w2kp))
+
+w2kp = which(overlap$qvalue < 0.05 & overlap$P_VALUE < 0.05)
+length(w2kp)
+table(overlap$spearman[w2kp] > 0, overlap$ETA[w2kp] > 1)
+t1 = table(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+t1
+sum(diag(t1)/length(w2kp))
+
+```
+
+## Summarize overlap for each CSeQTL cell type
+
+```{r}
+key_items = strsplit(overlap$key, split=":")
+table(sapply(key_items, length))
+overlap$cell_type_cs = sapply(key_items, function(v){v[4]})
+table(overlap$cell_type_cs)
+table(overlap$cell_type_cs, overlap$CELL_TYPE)
+
+signal1 = overlap$qvalue < 0.2 & overlap$lm_pval < 0.05
+table(overlap$cell_type_cs, signal1)
+
+signal2 = overlap$qvalue < 0.05 & overlap$lm_pval < 0.05
+table(overlap$cell_type_cs, signal2)
+
+cts = unique(overlap$cell_type_cs)
+length(cts)
+
+v1 = rep(NA, 2*length(cts))
+res = data.frame(cell_type = rep(cts, each=2), 
+                 qvalue = rep(c(0.2, 0.05), times=length(cts)),
+                 neQTL = v1, expected=v1, observed=v1, chisq_pval=v1)
+
+for(i in 1:nrow(res)){
+  ct1  = res$cell_type[i]
+  qval = res$qvalue[i]
+  
+  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.05
+  w2kp = which(w2kp & overlap$cell_type_cs == ct1)
+  
+  c1 = chisq.test(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+  
+  res$neQTL[i]    = length(w2kp)
+  res$expected[i] = round(sum(diag(c1$expected))/length(w2kp),2)
+  res$observed[i] = round(sum(diag(c1$observed))/length(w2kp),2)
+  res$chisq_pval[i] = signif(c1$p.value,2)
+}
+
+```
+
+
+## Summarize overlap for each Yazar et al. cell type
+
+```{r}
+
+signal1 = overlap$qvalue < 0.2 & overlap$lm_pval < 0.05
+table(overlap$CELL_TYPE, signal1)
+
+signal2 = overlap$qvalue < 0.05 & overlap$lm_pval < 0.05
+table(overlap$CELL_TYPE, signal2)
+
+cts = unique(overlap$CELL_TYPE)
+length(cts)
+
+v1 = rep(NA, 2*length(cts))
+res2 = data.frame(cell_type = rep(cts, each=2), 
+                 qvalue = rep(c(0.2, 0.05), times=length(cts)),
+                 neQTL = v1, expected=v1, observed=v1, chisq_pval=v1)
+
+for(i in 1:nrow(res2)){
+  ct1  = res2$cell_type[i]
+  qval = res2$qvalue[i]
+  
+  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.05
+  w2kp = which(w2kp & overlap$CELL_TYPE == ct1)
+  
+  c1 = chisq.test(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+  
+  res2$neQTL[i]    = length(w2kp)
+  res2$expected[i] = round(sum(diag(c1$expected))/length(w2kp),2)
+  res2$observed[i] = round(sum(diag(c1$observed))/length(w2kp),2)
+  res2$chisq_pval[i] = signif(c1$p.value,2)
+}
+
+```
+
+## Save results
+```{r}
+fwrite(res, file="results/step9_compare_eQTL_directions.tsv", sep="\t")
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

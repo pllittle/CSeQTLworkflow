@@ -1,0 +1,308 @@
+---
+title: "Check whethre eQTL effects have the same directions"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+Check the difference between the eGenes from Yazar et al. (2022) and eGenes identified by CSeQTL from GTEx whole blood RNA-seq data. In step 7, we have found that the number of eQTL overlaps is very small. Therefore, in this step, we directly calculate eQTL p-value using the Yazar et al. data. 
+
+# Setup
+
+## Load R libraries
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+
+library(rtracklayer)
+library(liftOver)
+
+params = list(cs_q_cutoff=5e-3, fold_cutoff=1)
+cs_q_cutoff = params$cs_q_cutoff
+fold_cutoff = params$fold_cutoff
+
+cat("cs_q_cutoff: ",  cs_q_cutoff,  "\n")
+cat("fold_cutoff: ",  fold_cutoff,  "\n")
+
+config = sprintf("cs_q_%.0e_fold_%.1f", 
+                 cs_q_cutoff, fold_cutoff)
+config
+```
+
+## Data directory and file names
+
+Read in the Yazar results of one cell type to confirm the recalculation of eQTL effects are cosistent with their results.
+```{r}
+CSeQTL_dir     = "../../CSeQTL/data2share/"
+GTEx_eqtl_file = "GTExBlood_eqtls.rds"
+
+Yazar_2022_dir = "~/research/data/scRNAseq_eQTL/Yazar_2022/"
+Yazar_2022_input = paste0(Yazar_2022_dir, 
+                          "OneK1K_cohort_cis_eQTL_input_files")
+Yazar_2022_eqtl_file = "onek1k_eqtl_CD4_gene_snp.tsv.gz"
+```
+
+# Read in CSeQTL results and make comparison
+
+## Read overlapping eGenes 
+
+```{r}
+GTExBlood <- readRDS(paste0(CSeQTL_dir, GTEx_eqtl_file))
+lapply(GTExBlood, dim)
+
+cs_result = GTExBlood$eqtl[GTExBlood$eqtl$trim==TRUE & 
+                             GTExBlood$eqtl$perm==FALSE & 
+                             GTExBlood$eqtl$MODEL=="cseqtl" & 
+                             (!is.na(GTExBlood$eqtl$PVAL)), ]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+cs_result = cs_result[-which(cs_result$CELLTYPE %in% 
+                               c("Bulk", "OTHER", "Neutrophil")),]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+# define a function to remove version number from gene id
+rm_version <- function(id_w_version){
+   gsub("\\..*", "", id_w_version)
+}
+
+cs_result$ENSG_version = cs_result$ENSG
+cs_result$ENSG = rm_version(cs_result$ENSG_version)
+```
+
+## Use liftOver to identify SNP locations 
+```{r}
+cs_result$SNP_loc_hg38 = str_extract(cs_result$SNP, "chr\\S+:\\d+(?=:)")
+cs_result$SNP_ref = str_extract(cs_result$SNP, "\\w(?=:\\w:b38)")
+cs_result$SNP_alt = str_extract(cs_result$SNP, "\\w(?=:b38)")
+
+table(cs_result$SNP_ref)
+table(cs_result$SNP_alt)
+
+path = system.file(package="liftOver", "extdata", "hg38ToHg19.over.chain")
+ch = import.chain(path)
+ch
+
+snp_loc_cs = as(cs_result$SNP_loc_hg38, "GRanges")
+cur19 = as.data.frame(liftOver(snp_loc_cs, ch))
+dim(cur19)
+cur19[1:2,]
+
+table(table(cur19$group))
+
+cs_result$SNP_loc_hg19 = NA
+cs_result$SNP_loc_hg19[cur19$group] = 
+  paste(cur19$seqnames, cur19$start, sep=":")
+dim(cs_result)
+cs_result[1:2,]
+
+table(is.na(cs_result$SNP_loc_hg19))
+```
+
+
+## calculate eQTL p-value using Yazar data 
+
+```{r}
+
+ct_groups = list(B = c("BIN", "BMem"), 
+                 CD4T = c("CD4NC", "CD4ET"),
+                 CD8T = c("CD8NC", "CD8ET", "CD8S100B"),
+                 Monocyte = c("MonoC", "MonoNC"),
+                 NK = c("NKR", "NK"))
+
+hg19_symbol_ensemblID_file = "hg19_gene_symbol_ensemblID.txt"
+hg19_symbol_ensembID <- read.delim(paste0("../../CSeQTL/Yazar_2022/", 
+                                          hg19_symbol_ensemblID_file))
+dim(hg19_symbol_ensembID)
+head(hg19_symbol_ensembID)
+
+dim(cs_result)
+cs_result[1:2,]
+cols2kp = c("chr", "ENSG", "GENE", "CELLTYPE", "SNP", "MUa", "ETA", 
+            "permutation_PVAL", "qvalue", "SNP_ref", "SNP_alt", 
+            "SNP_loc_hg19")
+cs_result = cs_result[,cols2kp]
+dim(cs_result)
+cs_result[1:2,]
+
+
+table(cs_result$ENSG %in% hg19_symbol_ensembID$gene_id)
+cs_result = cs_result[cs_result$ENSG %in% hg19_symbol_ensembID$gene_id,]
+dim(cs_result)
+mat1 = match(cs_result$ENSG, hg19_symbol_ensembID$gene_id)
+cs_result$GENE_ot = hg19_symbol_ensembID$GeneSymbol[mat1]
+
+table(cs_result$GENE == cs_result$GENE_ot)
+
+table(cs_result$chr)
+chrs = unique(cs_result$chr)
+cell_types = unique(cs_result$CELLTYPE)
+
+chrs
+cell_types
+
+res = NULL
+
+cs_result$SNP_loc_hg19 = gsub("^chr", "", cs_result$SNP_loc_hg19)
+cs_result[1:2,]
+
+for(chr1 in chrs){
+  cat(chr1, date(), "\n")
+  wchr = which(cs_result$chr == chr1)
+  cs_chr = cs_result[wchr,]
+  
+  gdat = fread(sprintf("%s/Genotype_Files/genotype_%s.tsv", 
+                       Yazar_2022_input, chr1))
+  dim(gdat)
+  gdat[1:2,1:3]
+  
+  for(ct1 in cell_types){
+    wct = which(cs_chr$CELLTYPE == ct1)
+    cs_chr_ct = cs_chr[wct,]
+    
+    for(ct2 in ct_groups[[ct1]]){
+      edat = fread(sprintf("%s/Expression_Files/%s_expression.tsv", 
+                       Yazar_2022_input, ct2))
+      dim(edat)
+      edat[1:2,1:3]
+      
+      cdat = fread(sprintf("%s/Covariate_Files/%s_peer_factors.tsv", 
+                       Yazar_2022_input, ct2), data.table = FALSE)
+      dim(cdat)
+      cdat[1:2,1:3]
+
+      stopifnot(all(edat$sampleid == cdat$sampleid))
+      stopifnot(all(edat$sampleid %in% gdat$sampleid))
+      gdat2 = gdat[match(edat$sampleid, gdat$sampleid),]
+      stopifnot(all(edat$sampleid == gdat2$sampleid))
+      
+      cs_chr_ct$cell_type_ot = ct2
+      cs_chr_ct$lm_beta = NA
+      cs_chr_ct$lm_pval = NA
+      cs_chr_ct$spearman = NA
+      cs_chr_ct$spearman_pval = NA
+
+      for(i in 1:nrow(cs_chr_ct)){
+        w_gene = which(names(edat) == cs_chr_ct$GENE_ot[i])
+        if(length(w_gene) == 0){ next }
+        if(length(w_gene) > 1){ stop("no kidding.. one gene only\n") }
+        
+        y = unlist(edat[,..w_gene])
+        
+        w_snp = grep(paste0(cs_chr_ct$SNP_loc_hg19[i], "_"), names(gdat2))
+        if(length(w_snp) != 1){ next }
+        
+        x = unlist(gdat2[,..w_snp])
+        
+        l1 = lm(y ~ x + sex + age + pc1 + pc2 + pc3 + pc4 + pc5 + pc6 + 
+                  pf1 + pf2, data=cdat)
+        
+        l2 = lm(y ~ sex + age + pc1 + pc2 + pc3 + pc4 + pc5 + pc6 + 
+                  pf1 + pf2, data=cdat)
+        
+        s1 = summary(l1)
+        r2 = l2$residuals
+        c2 = cor.test(r2, x, method="spearman")
+        cs_chr_ct$lm_beta[i] = s1$coefficients["x", 1]
+        cs_chr_ct$lm_pval[i] = s1$coefficients["x", 4]
+        cs_chr_ct$spearman[i]      = c2$estimate
+        cs_chr_ct$spearman_pval[i] = c2$p.value
+      }
+      
+      res = rbind(res, cs_chr_ct)
+    }
+  }
+  
+  rm(gdat)
+  gc()
+  gc()
+}
+
+```
+
+## Check results
+
+```{r}
+table(res$CELLTYPE, res$cell_type_ot)
+res$key = paste(res$ENSG, res$SNP_loc_hg19, sep=":")
+dim(res)
+res[1:2,]
+table(is.na(res$lm_beta))
+```
+
+## Read in Yazar et al. eQTL results in a few cell types for checking
+
+```{r}
+ot_result = fread(paste0(Yazar_2022_dir, Yazar_2022_eqtl_file))
+
+dim(ot_result)
+ot_result[1:2,]
+
+table(ot_result$CELL_TYPE)
+table(ot_result$ROUNDbin)
+
+ot_result$key = paste(ot_result$GENE_ID, ot_result$CHR, ot_result$POS, sep=":")
+
+res_test = res[res$cell_type_ot == "CD4ET",]
+dim(res_test)
+table(res_test$key %in% ot_result$key)
+table(ot_result$key %in% res_test$key)
+
+res_test = merge(res_test, ot_result, by="key")
+dim(res_test)
+res_test[1:2,]
+
+res_test$Round = as.factor(res_test$ROUNDbin)
+
+ggplot(res_test, aes(x=spearman, y=SPEARMANS_RHO, color=Round)) +
+  geom_point(alpha=0.6) + 
+  geom_abline(slope=1, intercept=0, color="grey")
+
+ggplot(res_test, aes(x=-log10(P_VALUE), y=-log10(spearman_pval), 
+                     color=Round)) + geom_point() + 
+  geom_abline(slope=1, intercept=0, color="grey")
+
+ggplot(res_test, aes(x=-log10(lm_pval), y=-log10(spearman_pval), 
+                     color=Round)) + geom_point() + 
+  geom_abline(slope=1, intercept=0, color="grey")
+
+```
+
+## write out results
+
+```{r}
+fwrite(res, "results/step7b_overlap.tsv", sep="\t")
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

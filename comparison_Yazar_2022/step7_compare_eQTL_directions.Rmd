@@ -1,0 +1,243 @@
+---
+title: "Check whethre eQTL effects have the same directions"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+Compare eQTL directions between Yazar et al. (2022) and CSeQTL results from GTEx whole blood RNA-seq data.
+
+# Setup
+
+## Load R libraries
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+
+library(rtracklayer)
+library(liftOver)
+
+params = list(cs_q_cutoff=5e-3, fold_cutoff=1)
+cs_q_cutoff = params$cs_q_cutoff
+fold_cutoff = params$fold_cutoff
+
+cat("cs_q_cutoff: ",  cs_q_cutoff,  "\n")
+cat("fold_cutoff: ",  fold_cutoff,  "\n")
+
+config = sprintf("cs_q_%.0e_fold_%.1f", 
+                 cs_q_cutoff, fold_cutoff)
+config
+```
+
+## Data directory and file names
+
+```{r}
+CSeQTL_dir     = "../../CSeQTL/data2share/"
+GTEx_eqtl_file = "GTExBlood_eqtls.rds"
+
+Yazar_2022_dir = "~/research/data/scRNAseq_eQTL/Yazar_2022/"
+Yazar_2022_eqtl_file = "onek1k_eqtl_dataset_gene_snp.tsv.gz"
+```
+
+# Read in CSeQTL results
+
+## Read overlapping eGenes 
+
+```{r}
+GTExBlood <- readRDS(paste0(CSeQTL_dir, GTEx_eqtl_file))
+lapply(GTExBlood, dim)
+
+cs_result = GTExBlood$eqtl[GTExBlood$eqtl$trim==TRUE & 
+                             GTExBlood$eqtl$perm==FALSE & 
+                             GTExBlood$eqtl$MODEL=="cseqtl" & 
+                             (!is.na(GTExBlood$eqtl$PVAL)), ]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+cs_result = cs_result[-which(cs_result$CELLTYPE %in% 
+                               c("Bulk", "OTHER", "Neutrophil")),]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+# define a function to remove version number from gene id
+rm_version <- function(id_w_version){
+   gsub("\\..*", "", id_w_version)
+}
+
+cs_result$ENSG_version = cs_result$ENSG
+cs_result$ENSG = rm_version(cs_result$ENSG_version)
+```
+
+## Use liftOver to identify SNP locations 
+```{r}
+cs_result$SNP_loc_hg38 = str_extract(cs_result$SNP, "chr\\S+:\\d+(?=:)")
+cs_result$SNP_ref = str_extract(cs_result$SNP, "\\w(?=:\\w:b38)")
+cs_result$SNP_alt = str_extract(cs_result$SNP, "\\w(?=:b38)")
+
+table(cs_result$SNP_ref)
+table(cs_result$SNP_alt)
+
+path = system.file(package="liftOver", "extdata", "hg38ToHg19.over.chain")
+ch = import.chain(path)
+ch
+
+snp_loc_cs = as(cs_result$SNP_loc_hg38, "GRanges")
+cur19 = as.data.frame(liftOver(snp_loc_cs, ch))
+dim(cur19)
+cur19[1:2,]
+
+table(table(cur19$group))
+
+cs_result$SNP_loc_hg19 = NA
+cs_result$SNP_loc_hg19[cur19$group] = 
+  paste(cur19$seqnames, cur19$start, sep=":")
+dim(cs_result)
+cs_result[1:2,]
+
+table(is.na(cs_result$SNP_loc_hg19))
+```
+
+
+## Read in Yazar et al. eQTL results
+
+```{r}
+ot_result = fread(paste0(Yazar_2022_dir, Yazar_2022_eqtl_file))
+
+dim(ot_result)
+ot_result[1:2,]
+
+table(ot_result$CELL_TYPE)
+table(ot_result$ROUNDbin)
+
+table(cs_result$CELLTYPE)
+
+grep1 <- function(str, x){
+  grep(str, x$CELL_TYPE, fixed =TRUE)
+}
+
+# ignore the results for CD4 SOX4 and Plasma Cell
+# since their results are not accurate
+ot_result$CELL_TYPE_CS = NA
+ot_result$CELL_TYPE_CS[grep1("CD4 Effector", ot_result)] = "CD4T"
+ot_result$CELL_TYPE_CS[grep1("CD4 Naive", ot_result)] = "CD4T"
+ot_result$CELL_TYPE_CS[grep1("CD8", ot_result)] = "CD8T"
+ot_result$CELL_TYPE_CS[grep1("B Cell", ot_result)] = "B"
+ot_result$CELL_TYPE_CS[grep1("Natural Killer", ot_result)] = "NK"
+ot_result$CELL_TYPE_CS[grep1("Monocyte", ot_result)] = "Monocyte"
+
+table(ot_result$CELL_TYPE_CS, useNA='ifany')
+table(ot_result$CELL_TYPE_CS, ot_result$CELL_TYPE, useNA='ifany')
+```
+
+## For one cell type, check the number of local SNPs per gene
+
+```{r}
+ot1 = ot_result[CELL_TYPE=="CD4 Effector memory/TEMRA",]
+dim(ot1)
+ot1[1:2,]
+table(ot1$ROUNDbin)
+
+ot1$key = paste(ot1$GENE_ID, ot1$CHR, ot1$POS, sep=":")
+t1 = table(ot1$key)
+table(t1)
+
+t1[t1 > 1][1:5]
+
+ot1[ot1$key == "ENSG00000004864:7:96120292",]
+ot1[ot1$key == "ENSG00000005801:11:2807723",]
+ot1[ot1$key == "ENSG00000005801:11:2872525",]
+
+tgene = as.numeric(table(ot1$GENE_ID[ot1$ROUNDbin == 1]))
+summary(tgene)
+rm(ot1)
+gc()
+```
+
+## Search for eQTL resutls from Yazar et al. 
+
+```{r}
+ot_result = ot_result[ROUNDbin == 1,]
+dim(ot_result)
+
+cs_result$key = paste(cs_result$ENSG, cs_result$SNP_loc_hg19, 
+                      cs_result$CELLTYPE, sep=":")
+
+ot_result$SNP_loc_hg19 = paste(paste0("chr", ot_result$CHR), 
+                               ot_result$POS, sep=":")
+
+ot_result$key = paste(ot_result$GENE_ID, 
+                      ot_result$SNP_loc_hg19, 
+                      ot_result$CELL_TYPE_CS, sep=":")
+
+table(cs_result$ENSG %in% ot_result$GENE_ID)
+table(cs_result$SNP_loc_hg19 %in% ot_result$SNP_loc_hg19)
+
+table(cs_result$key %in% ot_result$key)
+table(ot_result$key %in% cs_result$key)
+
+cs_result[1:2,]
+ot_result[1:2,]
+
+cs_cols = c("key", "permutation_PVAL", "qvalue", "ETA", "SNP_ref", "SNP_alt")
+ot_cols = c("key", "P_VALUE", "SPEARMANS_RHO", "A1", "A2", "CELL_TYPE")
+overlap = merge(cs_result[,cs_cols], ot_result[,..ot_cols], by="key")
+dim(overlap)
+overlap[1:2,]
+
+t1 = table(overlap$key)
+table(t1)
+t3 = t1[t1==3]
+t3[1:5]
+
+overlap[which(overlap$key == names(t3)[1]),]
+
+overlap$SNP_cs = paste(overlap$SNP_ref, overlap$SNP_alt, sep=":")
+overlap$SNP_ot = paste(overlap$A1, overlap$A2, sep=":")
+overlap$SNP_ot_rev = paste(overlap$A2, overlap$A1, sep=":")
+
+table(overlap$SNP_cs == overlap$SNP_ot, 
+      overlap$SNP_cs == overlap$SNP_ot_rev)
+
+w2switch = which(overlap$SNP_cs == overlap$SNP_ot_rev)
+overlap$SPEARMANS_RHO[w2switch] = - overlap$SPEARMANS_RHO[w2switch]
+
+table(overlap$SPEARMANS_RHO > 0, overlap$ETA > 1)
+chisq.test(overlap$SPEARMANS_RHO > 0, overlap$ETA > 1)
+
+w2kp = which(overlap$qvalue < 0.05 & overlap$P_VALUE < 0.05)
+table(overlap$SPEARMANS_RHO[w2kp] > 0, overlap$ETA[w2kp] > 1)
+chisq.test(overlap$SPEARMANS_RHO[w2kp] > 0, overlap$ETA[w2kp] > 1)
+```
+
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

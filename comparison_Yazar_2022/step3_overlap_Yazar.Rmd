@@ -178,6 +178,8 @@ n_eGenes_ot      = mat_cs_vs_ot
 
 eGenes_overlap_list = list()
 
+intersection_res = NULL
+
 pdf(width = 12, height = 6, 
     sprintf("figures/%s_eGenes_CSeQTL_pval_hist.pdf", Other_method))
 
@@ -192,7 +194,8 @@ for (i in 1:length(ot_cell_types)){
   ot_ct_result = read.csv(ot_eGenes_i_path, header = TRUE)
   ot_ct_result = ot_ct_result[order(ot_ct_result$qvalue),]
 
-  ot_eGenes_i  = ot_ct_result$Gene.Ensembl.ID[1:min(500,nrow(ot_ct_result))]
+  ot_i = ot_ct_result[1:min(500,nrow(ot_ct_result)),]
+  ot_eGenes_i  = ot_i$Gene.Ensembl.ID
 
   # genes that are included in the eQTL mapping by Yazar et al.
   ot_ct_considered  = Yazar_gene_list[[ot_ct_str]]
@@ -216,9 +219,10 @@ for (i in 1:length(ot_cell_types)){
     cs_ct = cs_cell_types[j]
     cs_ct_result = cs_result[cs_result$CELLTYPE == cs_ct,]
     cs_ct_result = cs_ct_result[order(cs_ct_result$qvalue),]
-    cs_eGenes_j  = cs_ct_result$ENSG[cs_ct_result$eQTL=="YES"]
+    cs_j         = cs_ct_result[cs_ct_result$eQTL=="YES",]
+    if(nrow(cs_j) > 300){ cs_j = cs_j[1:300,] }
     
-    if(length(cs_eGenes_j) > 300){ cs_eGenes_j = cs_eGenes_j[1:300] }
+    cs_eGenes_j  = cs_j$ENSG
     
     # genes that are included in the eQTL mapping
     cs_ct_considered = CSeQTL_gene_list[[cs_ct]]
@@ -227,6 +231,25 @@ for (i in 1:length(ot_cell_types)){
     
     # filter the eGenes from Yazar 2022 and CSeQTLto keep those 
     # in the overlap of 'overlap_considered'
+    
+    ot_ij = ot_i[ot_i$Gene.Ensembl.ID %in% overlap_considered,]
+    cs_ij = cs_j[cs_j$ENSG %in% overlap_considered,]
+
+    names(ot_ij)[which(names(ot_ij) =="Gene.Ensembl.ID")] = "ENSG"
+    names(ot_ij)[which(names(ot_ij) =="rho.correlation.coefficient")] = "rho"
+
+    ot_cols = c("ENSG", "SNP", "Chromosome", "Position", "rho", 
+                "SNP.assessed.allele", "qvalue")
+    cs_cols = c("ENSG", "SNP", "ETA", "qvalue")
+    
+    intersection_ij = merge(ot_ij[,ot_cols], cs_ij[,cs_cols],
+                            by="ENSG", suffixes = c("_ot","_cs"))
+    intersection_ij[["cell_type_ot"]] = ot_ct_str
+    intersection_ij[["cell_type_cs"]] = cs_ct
+
+    if(ot_ct %in% ct_groups[[cs_ct]]){
+      intersection_res = rbind(intersection_res, intersection_ij)
+    }
     
     ot_ij_eGenes = intersect(ot_eGenes_i, overlap_considered)
     cs_ij_eGenes = intersect(cs_eGenes_j, overlap_considered)
@@ -299,6 +322,11 @@ for (i in 1:length(ot_cell_types)){
 dev.off()
 
 n_eGenes_ot
+
+dim(intersection_res)
+intersection_res[1:2,]
+table(paste(intersection_res$cell_type_ot, 
+            intersection_res$cell_type_cs, sep="-"))
 
 ```
 
@@ -415,6 +443,9 @@ write.csv(as.data.frame(fisher_mat), row.names = TRUE,
 
 saveRDS(eGenes_overlap_list, 
         file=sprintf("results/step3_%s_eGenes.rds", config))
+
+write.csv(intersection_res, row.names = FALSE, 
+        file=sprintf("results/step3_%s_eGenes_overlap.csv", config))
 
 ```
 
