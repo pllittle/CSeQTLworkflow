@@ -1,0 +1,191 @@
+---
+title: "Check whethre eQTL effects have the same directions"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+Check the difference between the eGenes from Bryois et al. (2022) and eGenes identified by CSeQTL from GTEx brain data.
+
+# Setup
+
+## Load R libraries
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(reshape2)
+theme_set(theme_classic())
+```
+
+## Data directory and file names
+
+```{r}
+CSeQTL_dir     = "../../CSeQTL/data2share/"
+GTEx_eqtl_file = "GTExBrain_eqtls.rds"
+
+Bryois_2022_dir = "~/research/data/scRNAseq_eQTL/Bryois_2022/"
+```
+
+# Check eQTL effect size directions
+
+## Read overlapping eGenes 
+
+```{r}
+GTExBrain <- readRDS(paste0(CSeQTL_dir, GTEx_eqtl_file))
+length(GTExBrain)
+names(GTExBrain)
+
+cs_result = GTExBrain$eqtl[GTExBrain$eqtl$trim==TRUE & 
+                             GTExBrain$eqtl$perm==FALSE & 
+                             GTExBrain$eqtl$MODEL=="cseqtl" & 
+                             (!is.na(GTExBrain$eqtl$PVAL)), ]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+cs_result = cs_result[-which(cs_result$CELLTYPE %in% 
+                               c("Bulk")),]
+dim(cs_result)
+cs_result[1:2,]
+table(cs_result$CELLTYPE)
+
+# define a function to remove version number from gene id
+rm_version <- function(id_w_version){
+   gsub("\\..*", "", id_w_version)
+}
+
+cs_result$ENSG_version = cs_result$ENSG
+cs_result$ENSG = rm_version(cs_result$ENSG_version)
+
+cs_result$SNP_loc_hg38 = str_extract(cs_result$SNP, "chr\\S+:\\d+(?=:)")
+cs_result$SNP_ref = str_extract(cs_result$SNP, "\\w(?=:\\w:b38)")
+cs_result$SNP_alt = str_extract(cs_result$SNP, "\\w(?=:b38)")
+
+cs_result$key = paste(cs_result$ENSG, cs_result$SNP_loc_hg38, sep=":")
+
+dim(cs_result)
+cs_result[1:2,]
+```
+
+
+## Cell type names
+
+```{r}
+Bryois_cell_types = c("Astrocytes", "Excitatory.neurons",  
+                      "Inhibitory.neurons",  "Microglia", 
+                      "Oligodendrocytes", "OPCs...COPs" )
+
+cs_cell_types = c("Astro", "Exc", "Inh", "Micro", "Oligo", "OPC" )
+
+cell_types = data.frame(cs=cs_cell_types, ot=Bryois_cell_types)
+cell_types
+```
+
+## Find eQTL results overlap between CSeQTL and Bryois et al.
+
+```{r}
+snp_pos   = fread(paste0(Bryois_2022_dir, "snp_pos.txt.gz"))
+dim(snp_pos)
+snp_pos[1:2,]
+
+overlap_all = NULL
+
+for(i in 1:nrow(cell_types)){
+  
+  ct_cs = cell_types$cs[i]
+  ct_ot = cell_types$ot[i]
+
+  cat(i, ct_cs, ct_ot, date(), "\n")
+
+  cs_result_ct = cs_result[cs_result$CELLTYPE == ct_cs,]
+  dim(cs_result_ct)
+  cs_result_ct[1:2,]
+  
+  for(chr1 in 1:22){
+    ot_result = fread(paste0(Bryois_2022_dir, 
+                             sprintf("%s.%d.gz", ct_ot, chr1)))
+    stopifnot(ncol(ot_result) == 5)
+    names(ot_result) = c("Gene_id", "SNP_id", "D2TSS", "pval", "beta")
+    dim(ot_result)
+    ot_result[1:2,]
+    
+    ot_result$ens_id = str_extract(ot_result$Gene_id, "(?<=_)ENSG\\d+")
+    stopifnot(all(ot_result$SNP_id %in% snp_pos$SNP))
+    ot_result$SNP_loc = snp_pos$SNP_id_hg38[match(ot_result$SNP_id, 
+                                                  snp_pos$SNP)]
+    
+    ot_result$key = paste(ot_result$ens_id, ot_result$SNP_loc, sep=":")
+
+    cs_cols = c("key", "permutation_PVAL", "qvalue", "ETA", 
+                "SNP_ref", "SNP_alt")
+    ot_cols = c("key", "SNP_id", "pval", "beta")
+    overlap = merge(cs_result_ct[,cs_cols], ot_result[,..ot_cols], by="key")
+    dim(overlap)
+    overlap[1:2,]
+    
+    mat_SNP = match(overlap$SNP_id, snp_pos$SNP)
+    overlap$effect_allele = snp_pos$effect_allele[mat_SNP]
+    overlap$other_allele  = snp_pos$other_allele[mat_SNP]
+    
+    overlap$SNP_cs = paste(overlap$SNP_ref, overlap$SNP_alt, sep=":")
+    overlap$SNP_ot = paste(overlap$other_allele, overlap$effect_allele, sep=":")
+    overlap$SNP_ot_rev = paste(overlap$effect_allele, 
+                               overlap$other_allele, sep=":")
+    
+        
+    w2rm = which(overlap$SNP_cs != overlap$SNP_ot & 
+                   overlap$SNP_cs != overlap$SNP_ot_rev)
+    
+    if(length(w2rm) > 0){
+      cat(sprintf("chr%d: remove %d out of %d SNPs with genotype mismatch\n", 
+                  chr1, length(w2rm), nrow(overlap)))
+      overlap = overlap[-w2rm,]
+    }
+
+    w2switch = which(overlap$SNP_cs == overlap$SNP_ot_rev)
+    cat(sprintf("chr%d: switch the genotype of %d out of %d SNPs\n", 
+                chr1, length(w2switch), nrow(overlap)))
+    overlap$beta[w2switch] = - overlap$beta[w2switch]
+    overlap$cell_type = ct_cs
+    overlap_all = rbind(overlap_all, overlap)
+  }
+}
+
+dim(overlap_all)
+overlap_all[1:2,]
+```
+
+## Save results
+```{r}
+fwrite(overlap_all, 
+       file="results/step9_compare_eQTL_directions_GTExBrain.tsv", 
+       sep="\t")
+```
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+
+

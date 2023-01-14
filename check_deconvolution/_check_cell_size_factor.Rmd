@@ -1,0 +1,128 @@
+
+---
+title: "Check the impact of cell size factor"
+author: "Wei Sun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    number_sections: false
+  df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 80)
+```
+
+# Setup
+
+## Load R libraries
+
+
+```{r load_libraries, warning = FALSE, message = FALSE}
+library(data.table)
+library(stringr)
+library(org.Hs.eg.db)
+library(ICeDT)
+
+library(ggplot2)
+library(ggpubr)
+library(viridis)
+library(ggpointdensity)
+library(RColorBrewer)
+
+theme_set(theme_classic())
+```
+
+# Check the impact of cell size factor
+
+## simulat data of two cell types
+
+Simulate cell proportions from uniform distribution for 100 samples. 
+
+Note that if ignore cell size factor, the cell type proportion estimate (e.g. rho1n) has a non-linear relation with the true cell type proportions. For example, consider cell size factor of 2 for 1st cell type. If the true proportion is 0.5 : 0.5, ignoring cell size factor, the proportion of cell type 1 is 0.67. If the true proportion is 0.1 : 0.9, ignoring cell size factor, the proportions is 
+
+```{r}
+0.2/1.1
+```
+
+The ratio of cell type proportion change is 
+```{r}
+ratio1 = 0.67/0.5
+ratio2 = (0.2/1.1)/0.1
+
+ratio1
+ratio2
+```
+
+Next we use some simple simulation to illustrate the idea
+
+```{r}
+
+mu_estimate <- function(muA, muB, muC=10, n=100){
+  
+  rho1 = runif(n, 0.1, 0.9)
+  rho2 = (1 - rho1)*runif(n, 0.1, 0.9)
+  rho3 = 1 - rho1 -rho2
+
+  mu  = rho1*muA + rho2*muB + rho3*muC + rnorm(n, 0, 10)
+  
+  rho1n = rho1*2 
+  rho2n = rho2
+  rho3n = rho3
+  
+  rho1n = rho1n / (rho1n + rho2n + rho3n)
+  rho2n = rho2n / (rho1n + rho2n + rho3n)
+  rho3n = rho3n / (rho1n + rho2n + rho3n)
+
+  df = data.frame(rho1 = rho1, rho1_tpm=rho1n)
+  
+  g1 = ggplot(df, aes(x=rho1, y=rho1n)) + geom_point(alpha=0.6) + 
+    geom_abline(intercept = 0, slope=1, col="grey")
+  
+  g2 = ggplot(df, aes(x=rho3, y=rho3n)) + geom_point(alpha=0.6) + 
+    geom_abline(intercept = 0, slope=1, col="grey")
+  
+  g3 = ggplot(df, aes(x=rho1, y=rho3)) + geom_point(alpha=0.6) + 
+    geom_abline(intercept = 0, slope=1, col="grey")
+
+  g4 = ggplot(df, aes(x=rho1n, y=rho3n)) + geom_point(alpha=0.6) + 
+    geom_abline(intercept = 0, slope=1, col="grey")
+
+  
+  l1  = lm(mu ~ -1 + rho1 + rho2 + rho3) 
+
+  l2  = lm(mu ~ -1 + rho1n + rho2n + rho3n) 
+
+  ga = ggarrange(g1, g2, g3, g4, ncol = 2, nrow = 2)
+  print(ga)
+
+  list(mu = l1$coefficients, mu_tpm = l2$coefficients, 
+       l1R2 = summary(l1)$r.squared, l2R2=summary(l2)$r.squared)
+  
+
+}
+
+
+mu_estimate(muA=50,  muB=50, n=100)
+mu_estimate(muA=150, muB=50, n=100)
+```
+
+
+# Session information
+```{r}
+gc()
+
+sessionInfo()
+```
+
+# References
+
+

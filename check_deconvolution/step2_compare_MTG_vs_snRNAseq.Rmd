@@ -104,7 +104,7 @@ smrt_df[1:2,]
 ## Read in 10x data
 
 ```{r fig.width=4, fig.height=4}
-files = list.files(tenx_dir, pattern="\\.csv")
+files = list.files(tenx_dir, pattern="_genes_info\\.csv")
 length(files)
 
 inh_cts = c("Lamp5", "Pvalb", "Sst", "Vip")

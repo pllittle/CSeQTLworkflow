@@ -1,0 +1,273 @@
+
+R version 4.1.2 (2021-11-01) -- "Bird Hippie"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> Sys.setenv(RSTUDIO_PANDOC="/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools")
+> 
+> render_report = function(AF) {
++   rmarkdown::render(
++     "step9b_summarize_results.Rmd", params = list(
++       AF = AF
++     ),
++     output_file = sprintf("step9b_summarize_results_%s.html", AF)
++   )
++ }
+> 
+> render_report(AF="CMC_SCZ")
+
+
+processing file: step9b_summarize_results.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |.....                                                                 |   7%
+   inline R code fragments
+
+  |                                                                              |.........                                                             |  13%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |..............                                                        |  20%
+  ordinary text without R code
+
+  |                                                                              |...................                                                   |  27%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:data.table':
+
+    between, first, last
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: 'reshape2'
+
+The following objects are masked from 'package:data.table':
+
+    dcast, melt
+
+  |                                                                              |.......................                                               |  33%
+  ordinary text without R code
+
+  |                                                                              |............................                                          |  40%
+label: unnamed-chunk-1
+  |                                                                              |.................................                                     |  47%
+  ordinary text without R code
+
+  |                                                                              |.....................................                                 |  53%
+label: unnamed-chunk-2
+  |                                                                              |..........................................                            |  60%
+  ordinary text without R code
+
+  |                                                                              |...............................................                       |  67%
+label: unnamed-chunk-3 (with options) 
+List of 2
+ $ fig.width : num 5.5
+ $ fig.height: num 3
+
+  |                                                                              |...................................................                   |  73%
+  ordinary text without R code
+
+  |                                                                              |........................................................              |  80%
+label: unnamed-chunk-4
+  |                                                                              |.............................................................         |  87%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-5
+  |                                                                              |......................................................................| 100%
+  ordinary text without R code
+
+
+output file: step9b_summarize_results.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step9b_summarize_results.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step9b_summarize_results_CMC_SCZ.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//Rtmpsv2iKP/rmarkdown-str18428705eba6a.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step9b_summarize_results_CMC_SCZ.html
+> render_report(AF="CMC_Control")
+
+
+processing file: step9b_summarize_results.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |.....                                                                 |   7%
+   inline R code fragments
+
+  |                                                                              |.........                                                             |  13%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |..............                                                        |  20%
+  ordinary text without R code
+
+  |                                                                              |...................                                                   |  27%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |.......................                                               |  33%
+  ordinary text without R code
+
+  |                                                                              |............................                                          |  40%
+label: unnamed-chunk-1
+  |                                                                              |.................................                                     |  47%
+  ordinary text without R code
+
+  |                                                                              |.....................................                                 |  53%
+label: unnamed-chunk-2
+  |                                                                              |..........................................                            |  60%
+  ordinary text without R code
+
+  |                                                                              |...............................................                       |  67%
+label: unnamed-chunk-3 (with options) 
+List of 2
+ $ fig.width : num 5.5
+ $ fig.height: num 3
+
+  |                                                                              |...................................................                   |  73%
+  ordinary text without R code
+
+  |                                                                              |........................................................              |  80%
+label: unnamed-chunk-4
+  |                                                                              |.............................................................         |  87%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-5
+  |                                                                              |......................................................................| 100%
+  ordinary text without R code
+
+
+output file: step9b_summarize_results.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step9b_summarize_results.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step9b_summarize_results_CMC_Control.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//Rtmpsv2iKP/rmarkdown-str184287ba566aa.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step9b_summarize_results_CMC_Control.html
+> render_report(AF="GTExBrain")
+
+
+processing file: step9b_summarize_results.Rmd
+  |                                                                              |                                                                      |   0%  |                                                                              |.....                                                                 |   7%
+   inline R code fragments
+
+  |                                                                              |.........                                                             |  13%
+label: setup (with options) 
+List of 1
+ $ include: logi FALSE
+
+  |                                                                              |..............                                                        |  20%
+  ordinary text without R code
+
+  |                                                                              |...................                                                   |  27%
+label: load_libraries (with options) 
+List of 2
+ $ warning: logi FALSE
+ $ message: logi FALSE
+
+  |                                                                              |.......................                                               |  33%
+  ordinary text without R code
+
+  |                                                                              |............................                                          |  40%
+label: unnamed-chunk-1
+  |                                                                              |.................................                                     |  47%
+  ordinary text without R code
+
+  |                                                                              |.....................................                                 |  53%
+label: unnamed-chunk-2
+  |                                                                              |..........................................                            |  60%
+  ordinary text without R code
+
+  |                                                                              |...............................................                       |  67%
+label: unnamed-chunk-3 (with options) 
+List of 2
+ $ fig.width : num 5.5
+ $ fig.height: num 3
+
+  |                                                                              |...................................................                   |  73%
+  ordinary text without R code
+
+  |                                                                              |........................................................              |  80%
+label: unnamed-chunk-4
+  |                                                                              |.............................................................         |  87%
+  ordinary text without R code
+
+  |                                                                              |.................................................................     |  93%
+label: unnamed-chunk-5
+  |                                                                              |......................................................................| 100%
+  ordinary text without R code
+
+
+output file: step9b_summarize_results.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/quarto/bin/tools/pandoc +RTS -K512m -RTS step9b_summarize_results.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output step9b_summarize_results_GTExBrain.html --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --self-contained --variable bs3=TRUE --standalone --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_print=1 --template /Library/Frameworks/R.framework/Versions/4.1/Resources/library/rmarkdown/rmd/h/default.html --highlight-style tango --variable theme=journal --include-in-header /var/folders/wt/9hyy6qjx3999l4r_4yhbmz7m0000gn/T//Rtmpsv2iKP/rmarkdown-str1842844ba3737.html --mathjax --variable 'mathjax-url:https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' 
+[WARNING] Deprecated: --self-contained. use --embed-resources --standalone
+
+Output created: step9b_summarize_results_GTExBrain.html
+> 
+> sessionInfo()
+R version 4.1.2 (2021-11-01)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] reshape2_1.4.4    dplyr_1.0.7       ggpubr_0.4.0      ggplot2_3.4.0    
+[5] stringr_1.4.0     readxl_1.3.1      data.table_1.14.2
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.1.1   xfun_0.28          bslib_0.3.1        purrr_0.3.4       
+ [5] carData_3.0-4      colorspace_2.0-2   vctrs_0.5.1        generics_0.1.1    
+ [9] htmltools_0.5.2    yaml_2.2.1         utf8_1.2.2         rlang_1.0.6       
+[13] jquerylib_0.1.4    pillar_1.6.4       glue_1.6.2         withr_2.5.0       
+[17] DBI_1.1.1          RColorBrewer_1.1-2 plyr_1.8.6         lifecycle_1.0.3   
+[21] munsell_0.5.0      ggsignif_0.6.3     gtable_0.3.0       cellranger_1.1.0  
+[25] evaluate_0.14      labeling_0.4.2     knitr_1.36         fastmap_1.1.0     
+[29] fansi_0.5.0        highr_0.9          broom_0.7.10       Rcpp_1.0.7        
+[33] scales_1.2.1       backports_1.4.0    jsonlite_1.7.2     abind_1.4-5       
+[37] farver_2.1.0       digest_0.6.29      stringi_1.7.6      rstatix_0.7.0     
+[41] grid_4.1.2         cli_3.4.1          tools_4.1.2        magrittr_2.0.1    
+[45] sass_0.4.0         tibble_3.1.6       crayon_1.4.2       tidyr_1.1.4       
+[49] car_3.0-12         pkgconfig_2.0.3    ellipsis_0.3.2     assertthat_0.2.1  
+[53] rmarkdown_2.11     R6_2.5.1           compiler_4.1.2    
+> 
+> q(save = "no")
+> proc.time()
+   user  system elapsed 
+  3.767   0.798   5.461 

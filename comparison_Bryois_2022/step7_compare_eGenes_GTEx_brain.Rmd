@@ -76,11 +76,25 @@ Bryois_cell_types = c("Astrocytes", "Excitatory neurons",
                       "Oligodendrocytes", "OPCs / COPs")
 
 GTEx_cts = c("Astro", "Exc", "Inh", "Micro", "Oligo", "OPC")
+
+stitle <- function(pval){
+  str1 = sprintf("KS test p-val=%.1e", pval)
+  if(pval < 0.01){ str1 = paste(str1, "**") }
+  else if(pval < 0.05){ str1 = paste(str1, "*") }
+  str1
+}
+
+theme1 = theme(axis.text.x = element_text(angle = 30, vjust = 1, 
+                                   size = 11, hjust = 1),
+               axis.text.y = element_text(size = 11),
+               axis.title.x = element_blank(),
+               legend.position = "none")
+
 ```
 
 ## Read in Bryois 2022 results
 
-```{r fig.width=9, fig.height=9, warning = FALSE}
+```{r fig.width=9, fig.height=11, warning = FALSE}
 
 plist = list()
 
@@ -104,46 +118,51 @@ for (i in 1:length(Bryois_cell_types)){
   df_Bryois_ct = df_Bryois_ct[mat_i,]
   df_Bryois_ct$CSeQTL = 
     df_Bryois_ct$ensembl %in% eGenes_overlap_list[[i]]$CSeQTL
-  table(df_Bryois_ct$CSeQTL)
-  
+
+  df_Bryois_ct$CSeQTL_str = "sc-eQTL only"
+  df_Bryois_ct$CSeQTL_str[df_Bryois_ct$CSeQTL] = "sc-eQTL and CSeQTL"
+  df_Bryois_ct$CSeQTL_str = factor(df_Bryois_ct$CSeQTL_str, 
+                                   levels = c("sc-eQTL only", "sc-eQTL and CSeQTL"))
+    
   ks1 = ks.test(log10(df_Bryois_ct$dist[!df_Bryois_ct$CSeQTL] + 1), 
                 log10(df_Bryois_ct$dist[df_Bryois_ct$CSeQTL]+1))
   
   plist[[3*(i-1)+1]] = ggplot(df_Bryois_ct, 
-                              aes(x=CSeQTL, y=log10(dist+1), color=CSeQTL)) + 
+                              aes(x=CSeQTL_str, y=log10(dist+1), color=CSeQTL)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
     ggtitle(sprintf("%s, %d vs. %d", ct_nm, sum(!df_Bryois_ct$CSeQTL), 
                     sum(df_Bryois_ct$CSeQTL)), 
-            subtitle=sprintf("KS test p-val=%.1e", ks1$p.value))
+            subtitle=stitle(ks1$p.value)) + theme1 + 
+    ylab("log10(distance + 1)")
   
   ks1 = ks.test(-log10(df_Bryois_ct$adj_p)[!df_Bryois_ct$CSeQTL], 
                 -log10(df_Bryois_ct$adj_p)[df_Bryois_ct$CSeQTL])
 
-  plist[[3*(i-1)+2]] = ggplot(df_Bryois_ct, aes(x=CSeQTL, y=-log10(adj_p), 
+  plist[[3*(i-1)+2]] = ggplot(df_Bryois_ct, aes(x=CSeQTL_str, y=-log10(adj_p), 
                                                 color=CSeQTL)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
-    ggtitle(label="", subtitle = sprintf("KS test p-val=%.1e", ks1$p.value))
+    ggtitle(label="", subtitle = stitle(ks1$p.value)) + theme1 + 
+    ylab("-log10(adjuted p-value)")
 
   ks1 = ks.test(abs(df_Bryois_ct$beta)[!df_Bryois_ct$CSeQTL], 
                 abs(df_Bryois_ct$beta)[df_Bryois_ct$CSeQTL])
 
-  plist[[3*(i-1)+3]] = ggplot(df_Bryois_ct, aes(x=CSeQTL, y=abs(beta), 
+  plist[[3*(i-1)+3]] = ggplot(df_Bryois_ct, aes(x=CSeQTL_str, y=abs(beta), 
                                                 color=CSeQTL)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
-    ggtitle(label="", subtitle = sprintf("KS test p-val=%.1e", ks1$p.value))
+    ggtitle(label="", subtitle = stitle(ks1$p.value)) + theme1 + 
+    ylab("|beta|")
 
 }
 
-ggarrange(plotlist=plist[c(1:6,13:15)], nrow = 3, ncol = 3, 
-          common.legend=TRUE, legend="top")
+ggarrange(plotlist=plist[c(1:6,13:15)], nrow = 3, ncol = 3)
 
-ggarrange(plotlist=plist[-c(1:6,13:15)], nrow = 3, ncol = 3, 
-          common.legend=TRUE, legend="top")
+ggarrange(plotlist=plist[-c(1:6,13:15)], nrow = 3, ncol = 3)
 ```
 
 ## Read in CSeQTL results
 
-```{r fig.width=9, fig.height=9, warning = FALSE}
+```{r fig.width=9, fig.height=11, warning = FALSE}
 GTExBrain <- readRDS(paste0(CSeQTL_dir, GTExBrain_eqtl_file))
 length(GTExBrain)
 names(GTExBrain)
@@ -178,42 +197,50 @@ for (i in 1:length(GTEx_cts)){
   df_GTEx$sc_eGene = df_GTEx$ENSG %in% eGenes_overlap_list[[i]]$Bryois
   table(df_GTEx$sc_eGene)
   
+  df_GTEx$sc_str = "CSeQTL only"
+  df_GTEx$sc_str[df_GTEx$sc_eGene] = "CSeQTL and sc-eQTL"
+  df_GTEx$sc_str = factor(df_GTEx$sc_str, 
+                          levels = c("CSeQTL only", "CSeQTL and sc-eQTL"))
+
+  table(df_GTEx$sc_str)
+
   ks1 = ks.test(log10(df_GTEx$MUa[!df_GTEx$sc_eGene]), 
                 log10(df_GTEx$MUa[df_GTEx$sc_eGene]))
   
   plist[[3*(i-1)+1]] = ggplot(df_GTEx, 
-                              aes(x=sc_eGene, y=log10(MUa), 
-                                  color=sc_eGene)) + 
+                              aes(x=sc_str, y=log10(MUa), 
+                                  color=sc_str)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
     ggtitle(sprintf("%s, %d vs. %d", cct, sum(!df_GTEx$sc_eGene), 
                     sum(df_GTEx$sc_eGene)), 
-            subtitle=sprintf("KS test p-val=%.1e", ks1$p.value))
+            subtitle=stitle(ks1$p.value)) + theme1 + 
+    ylab("log10(mean expression of A allele)")
   
   df_GTEx$qvalue[which(df_GTEx$qvalue < 1e-50)] = 1e-50
   
   ks1 = ks.test(-log10(df_GTEx$qvalue)[!df_GTEx$sc_eGene], 
                 -log10(df_GTEx$qvalue)[df_GTEx$sc_eGene])
 
-  plist[[3*(i-1)+2]] = ggplot(df_GTEx, aes(x=sc_eGene, y=-log10(qvalue), 
-                                           color=sc_eGene)) + 
+  plist[[3*(i-1)+2]] = ggplot(df_GTEx, aes(x=sc_str, y=-log10(qvalue), 
+                                           color=sc_str)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
-    ggtitle(label="", subtitle = sprintf("KS test p-val=%.1e", ks1$p.value))
+    ggtitle(label="", subtitle = stitle(ks1$p.value)) + theme1 + 
+    ylab("-log10(q-value)")
 
   ks1 = ks.test(abs(log10(df_GTEx$ETA))[!df_GTEx$sc_eGene], 
-                abs(log10(df_GTEx$ETA))[df_GTEx$sc_eGene])
+                abs(log10(df_GTEx$ETA))[df_GTEx$sc_eGene]) 
 
-  plist[[3*(i-1)+3]] = ggplot(df_GTEx, aes(x=sc_eGene, y=abs(log10(ETA)), 
-                                           color=sc_eGene)) + 
+  plist[[3*(i-1)+3]] = ggplot(df_GTEx, aes(x=sc_str, y=abs(log10(ETA)), 
+                                           color=sc_str)) + 
       geom_violin(trim=FALSE) + geom_boxplot(width=0.1) + 
-    ggtitle(label="", subtitle = sprintf("KS test p-val=%.1e", ks1$p.value))
+    ggtitle(label="", subtitle = stitle(ks1$p.value)) + theme1 + 
+    ylab("|log10(ETA)|")
 
 }
 
-ggarrange(plotlist=plist[c(1:6,13:15)], nrow = 3, ncol = 3, 
-          common.legend=TRUE, legend="top")
+ggarrange(plotlist=plist[c(1:6,13:15)], nrow = 3, ncol = 3)
 
-ggarrange(plotlist=plist[-c(1:6,13:15)], nrow = 3, ncol = 3, 
-          common.legend=TRUE, legend="top")
+ggarrange(plotlist=plist[-c(1:6,13:15)], nrow = 3, ncol = 3)
 ```
 
 # Session information

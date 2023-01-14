@@ -40,37 +40,24 @@ theme_set(theme_classic())
 ## Read in overlap and summarize results
 
 ```{r, fig.width=5, fig.height=4}
-overlap = fread("results/step7_overlap.tsv")
+overlap = fread("results/step7b_overlap.tsv")
 dim(overlap)
 overlap[1:2,]
 
-g1 = ggplot(overlap, aes(x=SPEARMANS_RHO, y=spearman, color=CELL_TYPE)) + 
-         geom_point() + 
-  geom_hline(yintercept=0, linetype="dashed") + 
-  geom_vline(xintercept=0, linetype="dashed") + 
-  geom_abline(intercept = 0, slope = 1)
-g1
+table(is.na(overlap$lm_beta))
+overlap = overlap[which(!is.na(overlap$lm_beta)),]
+dim(overlap)
+overlap[1:2,]
+table(is.na(overlap$spearman))
 
-table(abs(overlap$SPEARMANS_RHO - overlap$spearman) < 0.01)
-table(abs(overlap$SPEARMANS_RHO - overlap$spearman) < 0.1)
-
-w2check = which(abs(overlap$SPEARMANS_RHO - overlap$spearman) > 0.1)
-overlap[w2check[1:2],]
-
-g1 = ggplot(overlap, aes(x=spearman, y=lm_beta, color=CELL_TYPE)) + 
+g1 = ggplot(overlap, aes(x=spearman, y=lm_beta, color=cell_type_ot)) + 
          geom_point() + 
   geom_hline(yintercept=0, linetype="dashed") + 
   geom_vline(xintercept=0, linetype="dashed")
 g1
-
-ggplot(overlap, aes(x=-log10(P_VALUE), y=-log10(spearman_pval), 
-                    color=CELL_TYPE)) + 
-         geom_point() + 
-  geom_hline(yintercept=0, linetype="dashed") + 
-  geom_vline(xintercept=0, linetype="dashed")
 
 ggplot(overlap, aes(x=-log10(spearman_pval), y=-log10(lm_pval), 
-                    color=CELL_TYPE)) + 
+                    color=cell_type_ot)) + 
          geom_point() + 
   geom_hline(yintercept=0, linetype="dashed") + 
   geom_vline(xintercept=0, linetype="dashed")
@@ -79,56 +66,66 @@ ggplot(overlap, aes(x=-log10(spearman_pval), y=-log10(lm_pval),
 table(overlap$spearman > 0, overlap$lm_beta > 0)
 table(overlap$spearman > 0, overlap$ETA > 1)
 
-t1 = table(overlap$lm_beta > 0, overlap$ETA > 1)
-t1
-chisq.test(overlap$lm_beta > 0, overlap$ETA > 1)
-sum(diag(t1)/nrow(overlap))
 
-w2kp = which(overlap$qvalue < 0.2 & overlap$P_VALUE < 0.05)
-length(w2kp)
-table(overlap$spearman[w2kp] > 0, overlap$ETA[w2kp] > 1)
-t1 = table(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
-t1
-sum(diag(t1)/length(w2kp))
+c1 = chisq.test(overlap$lm_beta > 0, overlap$ETA > 1)
+c1$p.value
+c1$expected
+c1$observed
 
-w2kp = which(overlap$qvalue < 0.05 & overlap$P_VALUE < 0.05)
-length(w2kp)
-table(overlap$spearman[w2kp] > 0, overlap$ETA[w2kp] > 1)
-t1 = table(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
-t1
-sum(diag(t1)/length(w2kp))
+sum(diag(c1$expected)/nrow(overlap))
+sum(diag(c1$observed)/nrow(overlap))
+
+cutoffs = data.frame(qvalue = rep(c(0.10, 0.005), each=2), 
+                     lm_pval = rep(c(0.05, 0.01), times=2))
+cutoffs
+
+v1 = rep(NA, nrow(cutoffs))
+res0 = data.frame(cutoffs, neQTL = v1, expected=v1, observed=v1, 
+                  chisq_pval=v1)
+
+for(i in 1:nrow(cutoffs)){
+  qi = cutoffs$qvalue[i]
+  pi = cutoffs$lm_pval[i]
+  
+  w2kp = which(overlap$qvalue < qi & overlap$lm_pval < pi)
+
+  c1 = chisq.test(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+  c1$expected
+  c1$observed
+
+  res0$neQTL[i]    = length(w2kp)
+  res0$expected[i] = round(sum(diag(c1$expected))/length(w2kp),2)
+  res0$observed[i] = round(sum(diag(c1$observed))/length(w2kp),2)
+  res0$chisq_pval[i] = signif(c1$p.value,2)
+}
+
+res0
 
 ```
 
 ## Summarize overlap for each CSeQTL cell type
 
 ```{r}
-key_items = strsplit(overlap$key, split=":")
-table(sapply(key_items, length))
-overlap$cell_type_cs = sapply(key_items, function(v){v[4]})
-table(overlap$cell_type_cs)
-table(overlap$cell_type_cs, overlap$CELL_TYPE)
+signal1 = overlap$qvalue < 0.1 & overlap$lm_pval < 0.01
+table(overlap$CELLTYPE, signal1)
 
-signal1 = overlap$qvalue < 0.2 & overlap$lm_pval < 0.05
-table(overlap$cell_type_cs, signal1)
+signal2 = overlap$qvalue < 0.005 & overlap$lm_pval < 0.01
+table(overlap$CELLTYPE, signal2)
 
-signal2 = overlap$qvalue < 0.05 & overlap$lm_pval < 0.05
-table(overlap$cell_type_cs, signal2)
-
-cts = unique(overlap$cell_type_cs)
+cts = unique(overlap$CELLTYPE)
 length(cts)
 
 v1 = rep(NA, 2*length(cts))
 res = data.frame(cell_type = rep(cts, each=2), 
-                 qvalue = rep(c(0.2, 0.05), times=length(cts)),
+                 qvalue = rep(c(0.1, 0.005), times=length(cts)),
                  neQTL = v1, expected=v1, observed=v1, chisq_pval=v1)
 
 for(i in 1:nrow(res)){
   ct1  = res$cell_type[i]
   qval = res$qvalue[i]
   
-  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.05
-  w2kp = which(w2kp & overlap$cell_type_cs == ct1)
+  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.01
+  w2kp = which(w2kp & overlap$CELLTYPE == ct1)
   
   c1 = chisq.test(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
   
@@ -138,35 +135,36 @@ for(i in 1:nrow(res)){
   res$chisq_pval[i] = signif(c1$p.value,2)
 }
 
+res
 ```
 
 
 ## Summarize overlap for each Yazar et al. cell type
 
 ```{r}
+signal1 = overlap$qvalue < 0.1 & overlap$lm_pval < 0.01
+table(overlap$cell_type_ot, signal1)
 
-signal1 = overlap$qvalue < 0.2 & overlap$lm_pval < 0.05
-table(overlap$CELL_TYPE, signal1)
+signal2 = overlap$qvalue < 0.005 & overlap$lm_pval < 0.01
+table(overlap$cell_type_ot, signal2)
 
-signal2 = overlap$qvalue < 0.05 & overlap$lm_pval < 0.05
-table(overlap$CELL_TYPE, signal2)
-
-cts = unique(overlap$CELL_TYPE)
+cts = unique(overlap$cell_type_ot)
 length(cts)
 
 v1 = rep(NA, 2*length(cts))
 res2 = data.frame(cell_type = rep(cts, each=2), 
-                 qvalue = rep(c(0.2, 0.05), times=length(cts)),
+                 qvalue = rep(c(0.1, 0.005), times=length(cts)),
                  neQTL = v1, expected=v1, observed=v1, chisq_pval=v1)
 
 for(i in 1:nrow(res2)){
   ct1  = res2$cell_type[i]
   qval = res2$qvalue[i]
   
-  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.05
-  w2kp = which(w2kp & overlap$CELL_TYPE == ct1)
+  w2kp = overlap$qvalue < qval & overlap$lm_pval < 0.01
+  w2kp = which(w2kp & overlap$cell_type_ot == ct1)
   
-  c1 = chisq.test(overlap$lm_beta[w2kp] > 0, overlap$ETA[w2kp] > 1)
+  c1 = suppressWarnings(chisq.test(overlap$lm_beta[w2kp] > 0, 
+                                   overlap$ETA[w2kp] > 1))
   
   res2$neQTL[i]    = length(w2kp)
   res2$expected[i] = round(sum(diag(c1$expected))/length(w2kp),2)
@@ -174,12 +172,34 @@ for(i in 1:nrow(res2)){
   res2$chisq_pval[i] = signif(c1$p.value,2)
 }
 
+res2
+```
+
+## plot
+```{r fig.width=4.5, fig.height=3}
+theme1 = theme(axis.text.x = element_text(angle = 60, vjust = 1, 
+                                   size = 11, hjust = 1),
+               axis.text.y = element_text(size = 11),
+               legend.text=element_text(size=11), 
+               axis.title.x = element_blank())
+
+res$qvalue = as.factor(res$qvalue)
+p <- ggplot(res, aes(x=cell_type, y=observed, fill=qvalue)) +
+  geom_bar(stat="identity", position=position_dodge()) + 
+  ylab("prop. consistent eQTL direction") 
+p + scale_fill_brewer(palette="Dark2") + theme1
 ```
 
 ## Save results
 ```{r}
-fwrite(res, file="results/step9_compare_eQTL_directions.tsv", sep="\t")
+res = rbind(res, res2)
+fwrite(res, file="results/step8_eQTL_directions_by_cell_type.tsv", sep="\t")
+
+fwrite(res0, file="results/step8_eQTL_directions.tsv", sep="\t")
+
 ```
+
+
 
 # Session information
 ```{r}
