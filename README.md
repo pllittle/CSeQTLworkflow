@@ -426,7 +426,7 @@ system(sprintf("wget %s",tmp_link))
 	* [Pipeline/Workflow](https://github.com/Sun-lab/scRNAseq_pipelines/tree/master/MTG)
 		to perform quality control on samples and genes, perform 
 		dimension reduction, clustering, and compare cluster assignments 
-		to existing cell type labeling
+		to existing cell type labeling. The signature matrix for brain that we have used is [signature_MTG.rds](https://github.com/Sun-lab/scRNAseq_pipelines/blob/master/MTG/signature_MTG.rds)
 	* [Downstream differential expression analysis](https://github.com/Sun-lab/scRNAseq_pipelines/tree/master/_brain_cell_type)
 
 * Comments:
